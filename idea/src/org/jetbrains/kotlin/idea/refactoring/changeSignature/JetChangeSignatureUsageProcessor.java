@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 JetBrains s.r.o.
+ * Copyright 2010-2013 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,32 +25,44 @@ import com.intellij.psi.search.searches.ReferencesSearch;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.refactoring.changeSignature.*;
 import com.intellij.refactoring.rename.ResolveSnapshotProvider;
+import com.intellij.refactoring.util.CommonRefactoringUtil;
 import com.intellij.refactoring.util.MoveRenameUsageInfo;
+import com.intellij.refactoring.util.RefactoringUIUtil;
 import com.intellij.refactoring.util.TextOccurrencesUtil;
 import com.intellij.usageView.UsageInfo;
 import com.intellij.util.Function;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.containers.HashSet;
 import com.intellij.util.containers.MultiMap;
+import kotlin.Function1;
+import kotlin.KotlinPackage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.impl.FunctionDescriptorImpl;
 import org.jetbrains.kotlin.idea.caches.resolve.ResolvePackage;
+import org.jetbrains.kotlin.idea.codeInsight.DescriptorToDeclarationUtil;
+import org.jetbrains.kotlin.idea.codeInsight.JetFileReferencesResolver;
 import org.jetbrains.kotlin.idea.refactoring.RefactoringPackage;
 import org.jetbrains.kotlin.idea.refactoring.changeSignature.usages.*;
 import org.jetbrains.kotlin.idea.references.JetSimpleNameReference;
 import org.jetbrains.kotlin.load.java.descriptors.JavaClassDescriptor;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.psi.*;
+import org.jetbrains.kotlin.psi.typeRefHelpers.TypeRefHelpersPackage;
 import org.jetbrains.kotlin.renderer.DescriptorRenderer;
 import org.jetbrains.kotlin.resolve.BindingContext;
 import org.jetbrains.kotlin.resolve.DescriptorToSourceUtils;
+import org.jetbrains.kotlin.resolve.calls.callUtil.CallUtilPackage;
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall;
 import org.jetbrains.kotlin.resolve.scopes.JetScope;
+import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue;
+import org.jetbrains.kotlin.resolve.scopes.receivers.ThisReceiver;
 import org.jetbrains.kotlin.types.JetType;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class JetChangeSignatureUsageProcessor implements ChangeSignatureUsageProcessor {
@@ -80,7 +92,7 @@ public class JetChangeSignatureUsageProcessor implements ChangeSignatureUsagePro
     }
 
     private static void findOneMethodUsages(
-            @NotNull JetFunctionDefinitionUsage functionUsageInfo,
+            @NotNull JetFunctionDefinitionUsage<?> functionUsageInfo,
             JetChangeInfo changeInfo,
             Set<UsageInfo> result
     ) {
@@ -92,7 +104,6 @@ public class JetChangeSignatureUsageProcessor implements ChangeSignatureUsagePro
 
         PsiElement functionPsi = functionUsageInfo.getElement();
         if (functionPsi == null) return;
-
 
         for (PsiReference reference : ReferencesSearch.search(functionPsi, functionPsi.getUseScope())) {
             PsiElement element = reference.getElement();
@@ -120,12 +131,14 @@ public class JetChangeSignatureUsageProcessor implements ChangeSignatureUsagePro
                                         ? ((JetFunction) functionPsi).getValueParameters()
                                         : ((JetClass) functionPsi).getPrimaryConstructorParameters();
 
+        JetParameterInfo newReceiverInfo = changeInfo.getReceiverParameterInfo();
+
         for (JetParameterInfo parameterInfo : changeInfo.getNewParameters()) {
             if (parameterInfo.getOldIndex() >= 0 && parameterInfo.getOldIndex() < oldParameters.size()) {
                 JetParameter oldParam = oldParameters.get(parameterInfo.getOldIndex());
                 String oldParamName = oldParam.getName();
 
-                if (oldParamName != null && !oldParamName.equals(parameterInfo.getName())) {
+                if (parameterInfo == newReceiverInfo || (oldParamName != null && !oldParamName.equals(parameterInfo.getName()))) {
                     for (PsiReference reference : ReferencesSearch.search(oldParam, oldParam.getUseScope())) {
                         PsiElement element = reference.getElement();
 
@@ -141,6 +154,10 @@ public class JetChangeSignatureUsageProcessor implements ChangeSignatureUsagePro
             }
         }
 
+        if (functionPsi instanceof JetFunction && newReceiverInfo != changeInfo.getMethodDescriptor().getReceiver()) {
+            findOriginalReceiversUsages(functionUsageInfo, result, changeInfo);
+        }
+
         if (functionPsi instanceof JetClass && ((JetClass) functionPsi).isEnum()) {
             for (JetDeclaration declaration : ((JetClass) functionPsi).getDeclarations()) {
                 if (declaration instanceof JetEnumEntry && ((JetEnumEntry) declaration).getDelegationSpecifierList() == null) {
@@ -148,6 +165,90 @@ public class JetChangeSignatureUsageProcessor implements ChangeSignatureUsagePro
                 }
             }
         }
+    }
+
+    private static void processInternalReferences(
+            JetFunctionDefinitionUsage functionUsageInfo,
+            JetTreeVisitor<BindingContext> visitor
+    ) {
+        JetFunction jetFunction = (JetFunction) functionUsageInfo.getDeclaration();
+        JetExpression body = jetFunction.getBodyExpression();
+        if (body != null) {
+            body.accept(visitor, ResolvePackage.analyze(body));
+        }
+        for (JetParameter parameter : jetFunction.getValueParameters()) {
+            JetExpression defaultValue = parameter.getDefaultValue();
+            if (defaultValue != null) {
+                defaultValue.accept(visitor, ResolvePackage.analyze(defaultValue));
+            }
+        }
+    }
+
+    private static void findOriginalReceiversUsages(
+            @NotNull final JetFunctionDefinitionUsage<?> functionUsageInfo,
+            @NotNull final Set<UsageInfo> result,
+            @NotNull final JetChangeInfo changeInfo
+    ) {
+        final JetParameterInfo originalReceiverInfo = changeInfo.getMethodDescriptor().getReceiver();
+        final FunctionDescriptor functionDescriptor = functionUsageInfo.getOriginalFunctionDescriptor();
+        processInternalReferences(
+                functionUsageInfo,
+                new JetTreeVisitor<BindingContext>() {
+                    private void processExplicitThis(
+                            @NotNull JetSimpleNameExpression expression,
+                            @NotNull ReceiverParameterDescriptor receiverDescriptor
+                    ) {
+                        if (originalReceiverInfo != null && !changeInfo.hasParameter(originalReceiverInfo)) return;
+                        if (!(expression.getParent() instanceof JetThisExpression)) return;
+
+                        if (receiverDescriptor == functionDescriptor.getExtensionReceiverParameter()) {
+                            assert originalReceiverInfo != null : "No original receiver info provided: " + functionUsageInfo.getDeclaration().getText();
+                            result.add(new JetParameterUsage(expression, originalReceiverInfo, functionUsageInfo));
+                        }
+                        else {
+                            ClassifierDescriptor targetDescriptor = receiverDescriptor.getType().getConstructor().getDeclarationDescriptor();
+                            assert targetDescriptor != null : "Receiver type has no descriptor: " + functionUsageInfo.getDeclaration().getText();
+                            result.add(new JetNonQualifiedOuterThisUsage((JetThisExpression) expression.getParent(), targetDescriptor));
+                        }
+                    }
+
+                    private void processImplicitThis(
+                            @NotNull JetElement callElement,
+                            @NotNull ThisReceiver receiverValue
+                    ) {
+                        DeclarationDescriptor targetDescriptor = receiverValue.getDeclarationDescriptor();
+                        if (targetDescriptor == functionDescriptor) {
+                            assert originalReceiverInfo != null : "No original receiver info provided: " + functionUsageInfo.getDeclaration().getText();
+                            result.add(new JetImplicitThisToParameterUsage(callElement, originalReceiverInfo, functionUsageInfo));
+                        }
+                        else {
+                            result.add(new JetImplicitOuterThisToQualifiedThisUsage(callElement, targetDescriptor));
+                        }
+                    }
+
+                    @Override
+                    public Void visitSimpleNameExpression(@NotNull JetSimpleNameExpression expression, BindingContext context) {
+                        ResolvedCall<? extends CallableDescriptor> resolvedCall = CallUtilPackage.getResolvedCall(expression, context);
+                        if (resolvedCall == null) return null;
+
+                        CallableDescriptor resultingDescriptor = resolvedCall.getResultingDescriptor();
+                        if (resultingDescriptor instanceof ReceiverParameterDescriptor) {
+                            processExplicitThis(expression, (ReceiverParameterDescriptor) resultingDescriptor);
+                            return null;
+                        }
+
+                        ReceiverValue receiverValue = resolvedCall.getExtensionReceiver();
+                        if (!(receiverValue instanceof ThisReceiver)) {
+                            receiverValue = resolvedCall.getDispatchReceiver();
+                        }
+                        if (receiverValue instanceof ThisReceiver) {
+                            processImplicitThis(resolvedCall.getCall().getCallElement(), (ThisReceiver) receiverValue);
+                        }
+
+                        return null;
+                    }
+                }
+        );
     }
 
     private static void findSAMUsages(ChangeInfo changeInfo, Set<UsageInfo> result) {
@@ -204,9 +305,9 @@ public class JetChangeSignatureUsageProcessor implements ChangeSignatureUsagePro
         PsiElement element = function != null ? function : changeInfo.getContext();
         BindingContext bindingContext = ResolvePackage.analyze((JetElement) element);
         FunctionDescriptor oldDescriptor = ChangeSignaturePackage.getOriginalBaseFunctionDescriptor(changeInfo);
-        JetScope parametersScope = null;
-        DeclarationDescriptor containingDeclaration = oldDescriptor != null ? oldDescriptor.getContainingDeclaration() : null;
+        DeclarationDescriptor containingDeclaration = oldDescriptor.getContainingDeclaration();
 
+        JetScope parametersScope = null;
         if (oldDescriptor instanceof ConstructorDescriptor && containingDeclaration instanceof ClassDescriptorWithResolutionScopes)
             parametersScope = ((ClassDescriptorWithResolutionScopes) containingDeclaration).getScopeForInitializerResolution();
         else if (function instanceof JetFunction)
@@ -252,6 +353,86 @@ public class JetChangeSignatureUsageProcessor implements ChangeSignatureUsagePro
                     if (variable != null && !(variable instanceof ValueParameterDescriptor)) {
                         PsiElement conflictElement = DescriptorToSourceUtils.descriptorToDeclaration(variable);
                         result.putValue(conflictElement, "Duplicating local variable '" + parameterName + "'");
+                    }
+                }
+            }
+        }
+
+        JetParameterInfo newReceiverInfo = changeInfo.getReceiverParameterInfo();
+        JetParameterInfo originalReceiverInfo = changeInfo.getMethodDescriptor().getReceiver();
+        if (function instanceof JetNamedFunction && newReceiverInfo != originalReceiverInfo) {
+            if (newReceiverInfo != null) {
+                Map<JetReferenceExpression, BindingContext> noReceiverRefToContext = KotlinPackage.filter(
+                        JetFileReferencesResolver.INSTANCE$.resolve((JetNamedFunction) function, true, true),
+                        new Function1<Map.Entry<? extends JetReferenceExpression, ? extends BindingContext>, Boolean>() {
+                            @Override
+                            public Boolean invoke(Map.Entry<? extends JetReferenceExpression, ? extends BindingContext> entry) {
+                                ResolvedCall<?> resolvedCall = CallUtilPackage.getResolvedCall(entry.getKey(), entry.getValue());
+                                return resolvedCall != null
+                                       && !resolvedCall.getDispatchReceiver().exists()
+                                       && !resolvedCall.getExtensionReceiver().exists();
+                            }
+                        }
+                );
+
+                JetPsiFactory psiFactory = new JetPsiFactory(function.getProject());
+                JetFile tempFile = RefactoringPackage.createTempCopy(
+                        (JetFile)function.getContainingFile(),
+                        new Function1<String, String>() {
+                            @Override
+                            public String invoke(String s) {
+                                return s;
+                            }
+                        }
+                );
+                JetNamedFunction functionWithReceiver =
+                        PsiTreeUtil.getParentOfType(tempFile.findElementAt(function.getTextOffset()), JetNamedFunction.class);
+                JetTypeReference receiverTypeRef = psiFactory.createType(newReceiverInfo.getCurrentTypeText());
+                TypeRefHelpersPackage.setReceiverTypeReference(functionWithReceiver, receiverTypeRef);
+                //noinspection ConstantConditions
+                BindingContext newContext = ResolvePackage.analyze(functionWithReceiver.getBodyExpression());
+
+                //noinspection ConstantConditions
+                int originalOffset = ((JetNamedFunction) function).getBodyExpression().getTextOffset();
+                JetExpression newBody = functionWithReceiver.getBodyExpression();
+                for (Map.Entry<JetReferenceExpression, BindingContext> entry : noReceiverRefToContext.entrySet()) {
+                    JetReferenceExpression originalRef = entry.getKey();
+                    BindingContext originalContext = entry.getValue();
+                    //noinspection ConstantConditions
+                    JetReferenceExpression newRef = PsiTreeUtil.getParentOfType(
+                            newBody.findElementAt(originalRef.getTextOffset() - originalOffset),
+                            JetReferenceExpression.class
+                    );
+                    ResolvedCall<?> newResolvedCall = CallUtilPackage.getResolvedCall(newRef, newContext);
+                    if (newResolvedCall == null
+                            || newResolvedCall.getExtensionReceiver().exists()
+                            || newResolvedCall.getDispatchReceiver().exists()) {
+                        //noinspection ConstantConditions
+                        CallableDescriptor descriptor =
+                                CallUtilPackage.getResolvedCall(originalRef, originalContext).getCandidateDescriptor();
+                        PsiElement declaration = DescriptorToDeclarationUtil.INSTANCE$.getDeclaration(function.getProject(), descriptor);
+                        String prefix = declaration != null ? RefactoringUIUtil.getDescription(declaration, true) : originalRef.getText();
+                        result.putValue(
+                                originalRef,
+                                KotlinPackage.capitalize(prefix + " will no longer be accessible after signature change")
+                        );
+                    }
+                }
+            }
+
+            if (originalReceiverInfo == null) {
+                for (UsageInfo usageInfo : refUsages.get()) {
+                    if (!(usageInfo instanceof JetFunctionCallUsage)) continue;
+
+                    JetFunctionCallUsage callUsage = (JetFunctionCallUsage) usageInfo;
+                    JetCallElement callElement = callUsage.getElement();
+                    if (callElement == null) continue;
+
+                    PsiElement parent = callElement.getParent();
+                    if (parent instanceof JetQualifiedExpression && ((JetQualifiedExpression) parent).getSelectorExpression() == callElement) {
+                        String message = "Explicit receiver is already present in call element: " +
+                                         CommonRefactoringUtil.htmlEmphasize(parent.getText());
+                        result.putValue(callElement, message);
                     }
                 }
             }

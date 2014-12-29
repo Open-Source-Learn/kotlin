@@ -19,5 +19,6 @@
     <orderEntry type="module" module-name="backend-common" />
     <orderEntry type="module" module-name="serialization" />
     <orderEntry type="module" module-name="serialization.jvm" />
+    <orderEntry type="module" module-name="serializer" />
   </component>
 </module>

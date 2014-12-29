@@ -102,6 +102,7 @@
         <include name="compiler/util/src"/>
         <include name="compiler/light-classes/src"/>
         <include name="compiler/builtins-serializer/src"/>
+        <include name="compiler/serializer/src"/>
         <include name="js/js.dart-ast/src"/>
         <include name="js/js.translator/src"/>
         <include name="js/js.frontend/src"/>
@@ -125,6 +126,7 @@
         <include name="util.runtime/**"/>
         <include name="light-classes/**"/>
         <include name="builtins-serializer/**"/>
+        <include name="serializer/**"/>
         <include name="js.dart-ast/**"/>
         <include name="js.translator/**"/>
         <include name="js.frontend/**"/>
@@ -191,6 +193,7 @@
             <fileset dir="compiler/util/src"/>
             <fileset dir="compiler/light-classes/src"/>
             <fileset dir="compiler/builtins-serializer"/>
+            <fileset dir="compiler/serializer"/>
             <fileset dir="js/js.dart-ast/src"/>
             <fileset dir="js/js.translator/src"/>
             <fileset dir="js/js.frontend/src"/>

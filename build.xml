@@ -157,6 +157,17 @@
     <target name="init">
         <mkdir dir="${kotlin-home}"/>
         <mkdir dir="${kotlin-home}/lib"/>
+
+        <if>
+            <isfalse value="${bootstrap.build.no.tests}"/>
+            <then>
+                <replaceregexp match="OBJECT\$" flags="g" replace="object">
+                    <fileset dir="${basedir}">
+                        <include name="**/*.java"/>
+                    </fileset>
+                </replaceregexp>
+            </then>
+        </if>
     </target>
 
     <target name="prepare-dist">

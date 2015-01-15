@@ -53,7 +53,7 @@ public class TypeDeserializer(
     fun type(proto: ProtoBuf.Type): JetType {
         if (proto.hasFlexibleTypeCapabilitiesId()) {
             val id = c.nameResolver.getString(proto.getFlexibleTypeCapabilitiesId())
-            val capabilities = c.components.flexibleTypeCapabilitiesDeserializer.capabilitiesById(id)
+            val capabilities = if (id != "kotlin.DynamicType") c.components.flexibleTypeCapabilitiesDeserializer.capabilitiesById(id) else DynamicTypeCapabilities
 
             if (capabilities == null) {
                 return ErrorUtils.createErrorType("${DeserializedType(c, proto)}: Capabilities not found for id $id")

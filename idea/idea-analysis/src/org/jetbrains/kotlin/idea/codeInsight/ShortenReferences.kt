@@ -132,6 +132,7 @@ public object ShortenReferences {
         
         processElements(elements, ShortenTypesVisitor(file, elementFilter, referenceToContext, importInserter))
         processElements(elements, ShortenQualifiedExpressionsVisitor(file, elementFilter, referenceToContext, importInserter))
+        processElements(elements, ShortenThisExpressionsVisitor(file, elementFilter, referenceToContext, importInserter))
     }
 
     private fun process(elements: Iterable<JetElement>, elementFilter: (PsiElement) -> FilterResult) {
@@ -244,7 +245,8 @@ public object ShortenReferences {
         private fun canShorten(qualifiedExpression: JetDotQualifiedExpression): Boolean {
             val context = bindingContext(qualifiedExpression)
 
-            if (context[BindingContext.QUALIFIER, qualifiedExpression.getReceiverExpression()] == null) return false
+            val receiver = qualifiedExpression.getReceiverExpression()
+            if (receiver !is JetThisExpression && context[BindingContext.QUALIFIER, receiver] == null) return false
 
             if (PsiTreeUtil.getParentOfType(
                     qualifiedExpression,
@@ -287,6 +289,35 @@ public object ShortenReferences {
         }
 
         override fun getShortenedElement(element: JetQualifiedExpression): JetElement = element.getSelectorExpression()!!
+    }
+
+    private class ShortenThisExpressionsVisitor(
+            file: JetFile,
+            elementFilter: (PsiElement) -> FilterResult,
+            resolveMap: Map<JetReferenceExpression, BindingContext>,
+            importInserter: ImportInserter
+    ) : ShorteningVisitor<JetThisExpression>(file, elementFilter, resolveMap, importInserter) {
+        private val simpleThis = JetPsiFactory(file).createExpression("this") as JetThisExpression
+
+        private fun canShorten(thisExpression: JetThisExpression): Boolean {
+            if (!thisExpression.isValid() || thisExpression.getTargetLabel() == null) return false;
+
+            val context = bindingContext(thisExpression)
+            val targetBefore = thisExpression.getInstanceReference().getTargets(context).singleOrNull() ?: return false
+            val scope = context[BindingContext.RESOLUTION_SCOPE, thisExpression] ?: return false
+            val newContext = simpleThis.analyzeInContext(scope)
+            val targetsAfter = simpleThis.getInstanceReference().getTargets(newContext)
+
+            return targetsAfter.size() == 1 && targetBefore == targetsAfter.first()
+        }
+
+        override fun visitThisExpression(expression: JetThisExpression) {
+            if (elementFilter(expression) == FilterResult.PROCESS && canShorten(expression)) {
+                elementsToShorten.add(expression)
+            }
+        }
+
+        override fun getShortenedElement(element: JetThisExpression): JetElement = simpleThis
     }
 
     private fun DeclarationDescriptor.asString()

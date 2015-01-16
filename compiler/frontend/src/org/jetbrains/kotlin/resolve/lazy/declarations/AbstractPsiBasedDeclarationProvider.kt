@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.storage.StorageManager
 import org.jetbrains.kotlin.resolve.lazy.ResolveSessionUtils.safeNameForLazyResolve
 import java.util.ArrayList
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
+import org.jetbrains.kotlin.name.SpecialNames
 
 public abstract class AbstractPsiBasedDeclarationProvider(storageManager: StorageManager) : DeclarationProvider {
 
@@ -48,7 +49,12 @@ public abstract class AbstractPsiBasedDeclarationProvider(storageManager: Storag
                 properties.put(safeNameForLazyResolve(declaration), declaration)
             }
             else if (declaration is JetClassOrObject) {
-                classesAndObjects.put(safeNameForLazyResolve(declaration.getNameAsName()), JetClassInfoUtil.createClassLikeInfo(declaration))
+                if (declaration is JetObjectDeclaration && declaration.isClassObject()) {
+                    classesAndObjects.put(SpecialNames.DEFAULT_NAME_FOR_DEFAULT_OBJECT, JetClassInfoUtil.createClassLikeInfo(declaration))
+                }
+                else {
+                    classesAndObjects.put(safeNameForLazyResolve(declaration.getNameAsName()), JetClassInfoUtil.createClassLikeInfo(declaration))
+                }
             }
             else if (declaration is JetScript) {
                 val scriptInfo = JetScriptInfo(declaration)

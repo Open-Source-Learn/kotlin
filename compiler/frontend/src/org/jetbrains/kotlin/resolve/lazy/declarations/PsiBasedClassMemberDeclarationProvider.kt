@@ -32,6 +32,9 @@ public class PsiBasedClassMemberDeclarationProvider(
             if (declaration !is JetClassObject) { // Do nothing for class object because it will be taken directly from the classInfo
                 index.putToIndex(declaration)
             }
+            else {
+                index.putToIndex(declaration.getObjectDeclaration())
+            }
         }
 
         for (parameter in classInfo.getPrimaryConstructorParameters()) {

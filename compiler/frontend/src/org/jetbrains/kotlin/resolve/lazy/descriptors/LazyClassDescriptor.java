@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.annotations.Annotations;
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorBase;
 import org.jetbrains.kotlin.name.Name;
+import org.jetbrains.kotlin.name.SpecialNames;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.BindingContext;
 import org.jetbrains.kotlin.resolve.DescriptorUtils;
@@ -382,7 +383,10 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     private LazyClassDescriptor computeClassObjectDescriptor(@Nullable JetClassObject classObject) {
         JetClassLikeInfo classObjectInfo = getClassObjectInfo(classObject);
         if (classObjectInfo != null) {
-            return new LazyClassDescriptor(resolveSession, this, getClassObjectName(getName()), classObjectInfo);
+            ClassifierDescriptor classObjectDescriptor = getScopeForMemberLookup().getClassifier(SpecialNames.getClassObjectName(getName()));
+            if (classObjectDescriptor instanceof LazyClassDescriptor) {
+                return (LazyClassDescriptor) classObjectDescriptor;
+            }
         }
         return null;
     }

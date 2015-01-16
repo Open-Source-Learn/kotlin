@@ -31,9 +31,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.analyzer.AnalysisResult;
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor;
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor;
 import org.jetbrains.kotlin.descriptors.VariableDescriptor;
 import org.jetbrains.kotlin.idea.caches.resolve.ResolvePackage;
-import org.jetbrains.kotlin.idea.util.IterableTypesDetector;
 import org.jetbrains.kotlin.idea.util.UtilPackage;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.BindingContext;
@@ -49,7 +49,7 @@ import java.util.Set;
 
 import static org.jetbrains.kotlin.resolve.bindingContextUtil.BindingContextUtilPackage.getDataFlowInfo;
 
-public abstract class BaseJetVariableMacro extends Macro {
+public abstract class BaseJetVariableMacro<TCache> extends Macro {
     @Nullable
     private JetNamedDeclaration[] getVariables(Expression[] params, ExpressionContext context) {
         if (params.length != 0) return null;
@@ -67,13 +67,10 @@ public abstract class BaseJetVariableMacro extends Macro {
 
         BindingContext bindingContext = analysisResult.getBindingContext();
         JetScope scope = bindingContext.get(BindingContext.RESOLUTION_SCOPE, contextExpression);
-        if (scope == null) {
-            return null;
-        }
-
-        IterableTypesDetector iterableTypesDetector = new IterableTypesDetector(project, analysisResult.getModuleDescriptor(), scope, null);
+        if (scope == null) return null;
 
         DataFlowInfo dataFlowInfo = getDataFlowInfo(bindingContext, contextExpression);
+        TCache cache = initCache(project, analysisResult.getModuleDescriptor(), bindingContext, contextExpression);
 
         List<VariableDescriptor> filteredDescriptors = new ArrayList<VariableDescriptor>();
         for (DeclarationDescriptor declarationDescriptor : scope.getDescriptors(DescriptorKindFilter.VARIABLES, JetScope.ALL_NAME_FILTER)) {
@@ -86,7 +83,7 @@ public abstract class BaseJetVariableMacro extends Macro {
                     continue;
                 }
 
-                if (isSuitable(variableDescriptor, project, iterableTypesDetector)) {
+                if (isSuitable(variableDescriptor, cache)) {
                     filteredDescriptors.add(variableDescriptor);
                 }
             }
@@ -106,11 +103,13 @@ public abstract class BaseJetVariableMacro extends Macro {
         return declarations.toArray(new JetNamedDeclaration[declarations.size()]);
     }
 
-    protected abstract boolean isSuitable(
-            @NotNull VariableDescriptor variableDescriptor,
+    protected abstract TCache initCache(
             @NotNull Project project,
-            @NotNull IterableTypesDetector iterableTypesDetector
-    );
+            @NotNull ModuleDescriptor moduleDescriptor,
+            @NotNull BindingContext bindingContext,
+            @NotNull JetExpression position);
+
+    protected abstract boolean isSuitable(@NotNull VariableDescriptor variableDescriptor, TCache cache);
 
     @Nullable
     private static JetExpression findContextExpression(PsiFile psiFile, int startOffset) {

@@ -185,7 +185,7 @@ private class ClassClsStubBuilder(
             return
         }
 
-        val classObjectId = classId.createNestedClassId(getClassObjectName(classId.getRelativeClassName().shortName()))
+        val classObjectId = classId.createNestedClassId(getClassObjectName())
         createNestedClassStub(classBody, classObjectId)
     }
 

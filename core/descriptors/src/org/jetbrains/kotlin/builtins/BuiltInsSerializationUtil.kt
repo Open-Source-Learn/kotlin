@@ -24,16 +24,9 @@ public object BuiltInsSerializationUtil {
     private val PACKAGE_FILE_NAME = ".kotlin_package"
     private val STRING_TABLE_FILE_NAME = ".kotlin_string_table"
     private val CLASS_NAMES_FILE_NAME = ".kotlin_class_names"
-    private val CLASS_OBJECT_NAME = "object"
 
     private fun relativeClassNameToFilePath(className: FqNameUnsafe): String? {
-        return FqName.fromSegments(className.pathSegments().map { segment ->
-            when {
-                SpecialNames.isClassObjectName(segment) -> CLASS_OBJECT_NAME
-                !segment.isSpecial() -> segment.getIdentifier()
-                else -> return null
-            }
-        }).asString()
+        return className.asString()
     }
 
     platformStatic public fun getClassMetadataPath(classId: ClassId): String? {

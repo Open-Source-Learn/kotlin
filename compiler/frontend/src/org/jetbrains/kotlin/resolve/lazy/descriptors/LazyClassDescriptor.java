@@ -382,11 +382,21 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     @Nullable
     private LazyClassDescriptor computeClassObjectDescriptor(@Nullable JetClassObject classObject) {
         JetClassLikeInfo classObjectInfo = getClassObjectInfo(classObject);
+        if (classObjectInfo instanceof SyntheticClassObjectInfo) {
+            return new LazyClassDescriptor(resolveSession, this, getClassObjectName(), classObjectInfo);
+        }
         if (classObjectInfo != null) {
-            ClassifierDescriptor classObjectDescriptor = getScopeForMemberLookup().getClassifier(SpecialNames.getClassObjectName(getName()));
+            ClassifierDescriptor classObjectDescriptor =
+                    getScopeForMemberLookup().getClassifier(SpecialNames.getClassObjectName());
             if (classObjectDescriptor instanceof LazyClassDescriptor) {
                 return (LazyClassDescriptor) classObjectDescriptor;
             }
+            else {
+                return null;
+            }
+        }
+        if (getKind() == ClassKind.CLASS_OBJECT || getKind() == ClassKind.OBJECT) {
+            return this;
         }
         return null;
     }
@@ -400,7 +410,8 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
 
             return JetClassInfoUtil.createClassLikeInfo(classObject.getObjectDeclaration());
         }
-        else if (getKind() == ClassKind.OBJECT || getKind() == ClassKind.ENUM_ENTRY) {
+        //TODO_R: deal with enum entry
+        else if (getKind() == ClassKind.ENUM_ENTRY) {
             return new SyntheticClassObjectInfo(originalClassInfo, this);
         }
 

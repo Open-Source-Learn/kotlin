@@ -122,7 +122,7 @@ public class DeserializedClassDescriptor(
             return DeserializedClassDescriptor(c, classObjectProto.getData(), c.nameResolver)
         }
 
-        return c.components.deserializeClass(classId.createNestedClassId(getClassObjectName(getName())))
+        return c.components.deserializeClass(classId.createNestedClassId(getClassObjectName()))
     }
 
     override fun getClassObjectDescriptor(): ClassDescriptor? = classObjectDescriptor()

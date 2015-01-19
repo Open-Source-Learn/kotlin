@@ -963,7 +963,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
             original = myClass;
             fieldTypeDescriptor = descriptor;
         }
-        else if (classObjectDescriptor != null) {
+        else if (classObjectDescriptor != null && !isClassObject(descriptor)) {
             JetClassObject classObject = ((JetClass) myClass).getClassObject();
             assert classObject != null : "Class object not found: " + myClass.getText();
             original = classObject.getObjectDeclaration();

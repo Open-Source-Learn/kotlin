@@ -95,7 +95,7 @@ public class EnumEntrySyntheticClassDescriptor extends ClassDescriptorBase {
         this.classObjectDescriptor =
                 kind == ClassKind.CLASS_OBJECT
                 ? null
-                : new EnumEntrySyntheticClassDescriptor(storageManager, this, getDefaultType(), SpecialNames.getClassObjectName(name),
+                : new EnumEntrySyntheticClassDescriptor(storageManager, this, getDefaultType(), SpecialNames.getClassObjectName(),
                                                         ClassKind.CLASS_OBJECT, enumMemberNames, SourceElement.NO_SOURCE);
     }
 

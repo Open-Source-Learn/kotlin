@@ -36,15 +36,10 @@ public class SpecialNames {
         return name != null && !name.isSpecial() ? name : SAFE_IDENTIFIER_FOR_NO_NAME;
     }
 
-    //TODO:
+    //TODO_R: should go away
     @NotNull
-    public static Name getClassObjectName(@NotNull Name className) {
+    public static Name getClassObjectName() {
         return DEFAULT_NAME_FOR_DEFAULT_OBJECT;
-    }
-
-    //TODO:
-    public static boolean isClassObjectName(@NotNull Name name) {
-        return name.equals(DEFAULT_NAME_FOR_DEFAULT_OBJECT);
     }
 
     private SpecialNames() {}

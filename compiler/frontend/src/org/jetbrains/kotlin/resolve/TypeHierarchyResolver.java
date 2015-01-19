@@ -396,7 +396,7 @@ public class TypeHierarchyResolver {
             DeclarationDescriptor container = owner.getOwnerForChildren();
 
             MutableClassDescriptor classObjectDescriptor =
-                    createClassDescriptorForSingleton(objectDeclaration, getClassObjectName(container.getName()), ClassKind.CLASS_OBJECT);
+                    createClassDescriptorForSingleton(objectDeclaration, getClassObjectName(), ClassKind.CLASS_OBJECT);
 
             PackageLikeBuilder.ClassObjectStatus status =
                     isEnumEntry(container) || isObject(container) || c.getTopDownAnalysisParameters().isDeclaredLocally() ?
@@ -436,7 +436,7 @@ public class TypeHierarchyResolver {
         private MutableClassDescriptor createSyntheticClassObjectForSingleton(@NotNull ClassDescriptor classDescriptor) {
             MutableClassDescriptor classObject =
                     new MutableClassDescriptor(classDescriptor, outerScope, ClassKind.CLASS_OBJECT, false,
-                                               getClassObjectName(classDescriptor.getName()), SourceElement.NO_SOURCE);
+                                               getClassObjectName(), SourceElement.NO_SOURCE);
 
             classObject.setModality(Modality.FINAL);
             classObject.setVisibility(DescriptorUtils.getSyntheticClassObjectVisibility());

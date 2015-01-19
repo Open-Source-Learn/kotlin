@@ -196,7 +196,7 @@ public class BuiltInsSerializer(private val dependOnOldBuiltIns: Boolean) {
         serializeClasses(classDescriptor.getUnsubstitutedInnerClassesScope().getDescriptors(), serializer, writeClass)
 
         val classObjectDescriptor = classDescriptor.getClassObjectDescriptor()
-        if (classObjectDescriptor != null) {
+        if (classObjectDescriptor != null && !classDescriptor.getKind().isSingleton()) {
             serializeClass(classObjectDescriptor, serializer, writeClass)
         }
     }

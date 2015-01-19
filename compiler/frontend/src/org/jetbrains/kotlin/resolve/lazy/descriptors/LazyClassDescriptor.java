@@ -395,6 +395,7 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
                 return null;
             }
         }
+        //TODO_R: use isObject isClassObject
         if (getKind() == ClassKind.CLASS_OBJECT || getKind() == ClassKind.OBJECT) {
             return this;
         }

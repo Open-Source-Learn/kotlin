@@ -111,16 +111,10 @@ public class DeserializedClassDescriptor(
     }
 
     private fun computeClassObjectDescriptor(): ClassDescriptor? {
-        if (!classProto.hasClassObject()) return null
-
-        if (getKind() == ClassKind.OBJECT) {
-            val classObjectProto = classProto.getClassObject()
-            if (!classObjectProto.hasData()) {
-                throw IllegalStateException("Object should have a serialized class object: $classId")
-            }
-
-            return DeserializedClassDescriptor(c, classObjectProto.getData(), c.nameResolver)
+        if (getKind() == ClassKind.OBJECT || getKind() == ClassKind.CLASS_OBJECT) {
+            return this
         }
+        if (!classProto.hasClassObject()) return null
 
         return c.components.deserializeClass(classId.createNestedClassId(getClassObjectName()))
     }

@@ -161,7 +161,7 @@
         <if>
             <isfalse value="${bootstrap.build.no.tests}"/>
             <then>
-                <replaceregexp match="OBJECT\$" flags="g" replace="object">
+                <replaceregexp match="OBJECT\$" flags="g" replace="Default">
                     <fileset dir="${basedir}">
                         <include name="**/*.java"/>
                     </fileset>

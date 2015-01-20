@@ -64,6 +64,6 @@ class BuiltInsAnnotationAndConstantLoader(
             kind: AnnotatedCallableKind
     ): CompileTimeConstant<*>? {
         // TODO: support deserialization of compile time constants in built-ins when needed
-        throw UnsupportedOperationException()
+        return null;
     }
 }

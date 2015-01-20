@@ -9824,9 +9824,27 @@ public final class DebugProtoBuf {
     public interface ClassObjectOrBuilder
         extends com.google.protobuf.MessageOrBuilder {
 
-      // optional .org.jetbrains.kotlin.serialization.Class data = 1;
+      // optional int32 class_object_name = 1;
       /**
-       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+       * <code>optional int32 class_object_name = 1;</code>
+       *
+       * <pre>
+       * If this field is present, it contains the name of default object.
+       * </pre>
+       */
+      boolean hasClassObjectName();
+      /**
+       * <code>optional int32 class_object_name = 1;</code>
+       *
+       * <pre>
+       * If this field is present, it contains the name of default object.
+       * </pre>
+       */
+      int getClassObjectName();
+
+      // optional .org.jetbrains.kotlin.serialization.Class data = 2;
+      /**
+       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
        *
        * <pre>
        * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -9835,7 +9853,7 @@ public final class DebugProtoBuf {
        */
       boolean hasData();
       /**
-       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
        *
        * <pre>
        * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -9844,7 +9862,7 @@ public final class DebugProtoBuf {
        */
       org.jetbrains.kotlin.serialization.DebugProtoBuf.Class getData();
       /**
-       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
        *
        * <pre>
        * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -9904,9 +9922,14 @@ public final class DebugProtoBuf {
                 }
                 break;
               }
-              case 10: {
+              case 8: {
+                bitField0_ |= 0x00000001;
+                classObjectName_ = input.readInt32();
+                break;
+              }
+              case 18: {
                 org.jetbrains.kotlin.serialization.DebugProtoBuf.Class.Builder subBuilder = null;
-                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
                   subBuilder = data_.toBuilder();
                 }
                 data_ = input.readMessage(org.jetbrains.kotlin.serialization.DebugProtoBuf.Class.PARSER, extensionRegistry);
@@ -9914,7 +9937,7 @@ public final class DebugProtoBuf {
                   subBuilder.mergeFrom(data_);
                   data_ = subBuilder.buildPartial();
                 }
-                bitField0_ |= 0x00000001;
+                bitField0_ |= 0x00000002;
                 break;
               }
             }
@@ -9957,11 +9980,35 @@ public final class DebugProtoBuf {
       }
 
       private int bitField0_;
-      // optional .org.jetbrains.kotlin.serialization.Class data = 1;
-      public static final int DATA_FIELD_NUMBER = 1;
+      // optional int32 class_object_name = 1;
+      public static final int CLASS_OBJECT_NAME_FIELD_NUMBER = 1;
+      private int classObjectName_;
+      /**
+       * <code>optional int32 class_object_name = 1;</code>
+       *
+       * <pre>
+       * If this field is present, it contains the name of default object.
+       * </pre>
+       */
+      public boolean hasClassObjectName() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>optional int32 class_object_name = 1;</code>
+       *
+       * <pre>
+       * If this field is present, it contains the name of default object.
+       * </pre>
+       */
+      public int getClassObjectName() {
+        return classObjectName_;
+      }
+
+      // optional .org.jetbrains.kotlin.serialization.Class data = 2;
+      public static final int DATA_FIELD_NUMBER = 2;
       private org.jetbrains.kotlin.serialization.DebugProtoBuf.Class data_;
       /**
-       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
        *
        * <pre>
        * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -9969,10 +10016,10 @@ public final class DebugProtoBuf {
        * </pre>
        */
       public boolean hasData() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
        *
        * <pre>
        * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -9983,7 +10030,7 @@ public final class DebugProtoBuf {
         return data_;
       }
       /**
-       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+       * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
        *
        * <pre>
        * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -9995,6 +10042,7 @@ public final class DebugProtoBuf {
       }
 
       private void initFields() {
+        classObjectName_ = 0;
         data_ = org.jetbrains.kotlin.serialization.DebugProtoBuf.Class.getDefaultInstance();
       }
       private byte memoizedIsInitialized = -1;
@@ -10016,7 +10064,10 @@ public final class DebugProtoBuf {
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          output.writeMessage(1, data_);
+          output.writeInt32(1, classObjectName_);
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          output.writeMessage(2, data_);
         }
         getUnknownFields().writeTo(output);
       }
@@ -10029,7 +10080,11 @@ public final class DebugProtoBuf {
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeMessageSize(1, data_);
+            .computeInt32Size(1, classObjectName_);
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeMessageSize(2, data_);
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -10148,12 +10203,14 @@ public final class DebugProtoBuf {
 
         public Builder clear() {
           super.clear();
+          classObjectName_ = 0;
+          bitField0_ = (bitField0_ & ~0x00000001);
           if (dataBuilder_ == null) {
             data_ = org.jetbrains.kotlin.serialization.DebugProtoBuf.Class.getDefaultInstance();
           } else {
             dataBuilder_.clear();
           }
-          bitField0_ = (bitField0_ & ~0x00000001);
+          bitField0_ = (bitField0_ & ~0x00000002);
           return this;
         }
 
@@ -10185,6 +10242,10 @@ public final class DebugProtoBuf {
           if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
             to_bitField0_ |= 0x00000001;
           }
+          result.classObjectName_ = classObjectName_;
+          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+            to_bitField0_ |= 0x00000002;
+          }
           if (dataBuilder_ == null) {
             result.data_ = data_;
           } else {
@@ -10206,6 +10267,9 @@ public final class DebugProtoBuf {
 
         public Builder mergeFrom(org.jetbrains.kotlin.serialization.DebugProtoBuf.Class.ClassObject other) {
           if (other == org.jetbrains.kotlin.serialization.DebugProtoBuf.Class.ClassObject.getDefaultInstance()) return this;
+          if (other.hasClassObjectName()) {
+            setClassObjectName(other.getClassObjectName());
+          }
           if (other.hasData()) {
             mergeData(other.getData());
           }
@@ -10242,12 +10306,61 @@ public final class DebugProtoBuf {
         }
         private int bitField0_;
 
-        // optional .org.jetbrains.kotlin.serialization.Class data = 1;
+        // optional int32 class_object_name = 1;
+        private int classObjectName_ ;
+        /**
+         * <code>optional int32 class_object_name = 1;</code>
+         *
+         * <pre>
+         * If this field is present, it contains the name of default object.
+         * </pre>
+         */
+        public boolean hasClassObjectName() {
+          return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+        /**
+         * <code>optional int32 class_object_name = 1;</code>
+         *
+         * <pre>
+         * If this field is present, it contains the name of default object.
+         * </pre>
+         */
+        public int getClassObjectName() {
+          return classObjectName_;
+        }
+        /**
+         * <code>optional int32 class_object_name = 1;</code>
+         *
+         * <pre>
+         * If this field is present, it contains the name of default object.
+         * </pre>
+         */
+        public Builder setClassObjectName(int value) {
+          bitField0_ |= 0x00000001;
+          classObjectName_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional int32 class_object_name = 1;</code>
+         *
+         * <pre>
+         * If this field is present, it contains the name of default object.
+         * </pre>
+         */
+        public Builder clearClassObjectName() {
+          bitField0_ = (bitField0_ & ~0x00000001);
+          classObjectName_ = 0;
+          onChanged();
+          return this;
+        }
+
+        // optional .org.jetbrains.kotlin.serialization.Class data = 2;
         private org.jetbrains.kotlin.serialization.DebugProtoBuf.Class data_ = org.jetbrains.kotlin.serialization.DebugProtoBuf.Class.getDefaultInstance();
         private com.google.protobuf.SingleFieldBuilder<
             org.jetbrains.kotlin.serialization.DebugProtoBuf.Class, org.jetbrains.kotlin.serialization.DebugProtoBuf.Class.Builder, org.jetbrains.kotlin.serialization.DebugProtoBuf.ClassOrBuilder> dataBuilder_;
         /**
-         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
          *
          * <pre>
          * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -10255,10 +10368,10 @@ public final class DebugProtoBuf {
          * </pre>
          */
         public boolean hasData() {
-          return ((bitField0_ & 0x00000001) == 0x00000001);
+          return ((bitField0_ & 0x00000002) == 0x00000002);
         }
         /**
-         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
          *
          * <pre>
          * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -10273,7 +10386,7 @@ public final class DebugProtoBuf {
           }
         }
         /**
-         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
          *
          * <pre>
          * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -10290,11 +10403,11 @@ public final class DebugProtoBuf {
           } else {
             dataBuilder_.setMessage(value);
           }
-          bitField0_ |= 0x00000001;
+          bitField0_ |= 0x00000002;
           return this;
         }
         /**
-         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
          *
          * <pre>
          * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -10309,11 +10422,11 @@ public final class DebugProtoBuf {
           } else {
             dataBuilder_.setMessage(builderForValue.build());
           }
-          bitField0_ |= 0x00000001;
+          bitField0_ |= 0x00000002;
           return this;
         }
         /**
-         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
          *
          * <pre>
          * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -10322,7 +10435,7 @@ public final class DebugProtoBuf {
          */
         public Builder mergeData(org.jetbrains.kotlin.serialization.DebugProtoBuf.Class value) {
           if (dataBuilder_ == null) {
-            if (((bitField0_ & 0x00000001) == 0x00000001) &&
+            if (((bitField0_ & 0x00000002) == 0x00000002) &&
                 data_ != org.jetbrains.kotlin.serialization.DebugProtoBuf.Class.getDefaultInstance()) {
               data_ =
                 org.jetbrains.kotlin.serialization.DebugProtoBuf.Class.newBuilder(data_).mergeFrom(value).buildPartial();
@@ -10333,11 +10446,11 @@ public final class DebugProtoBuf {
           } else {
             dataBuilder_.mergeFrom(value);
           }
-          bitField0_ |= 0x00000001;
+          bitField0_ |= 0x00000002;
           return this;
         }
         /**
-         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
          *
          * <pre>
          * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -10351,11 +10464,11 @@ public final class DebugProtoBuf {
           } else {
             dataBuilder_.clear();
           }
-          bitField0_ = (bitField0_ & ~0x00000001);
+          bitField0_ = (bitField0_ & ~0x00000002);
           return this;
         }
         /**
-         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
          *
          * <pre>
          * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -10363,12 +10476,12 @@ public final class DebugProtoBuf {
          * </pre>
          */
         public org.jetbrains.kotlin.serialization.DebugProtoBuf.Class.Builder getDataBuilder() {
-          bitField0_ |= 0x00000001;
+          bitField0_ |= 0x00000002;
           onChanged();
           return getDataFieldBuilder().getBuilder();
         }
         /**
-         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
          *
          * <pre>
          * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -10383,7 +10496,7 @@ public final class DebugProtoBuf {
           }
         }
         /**
-         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 1;</code>
+         * <code>optional .org.jetbrains.kotlin.serialization.Class data = 2;</code>
          *
          * <pre>
          * If this field is present, it contains serialized data for a synthetic class object, for which there's no class file.
@@ -17742,7 +17855,7 @@ public final class DebugProtoBuf {
       "zation.TypeParameter.Variance:\003INV\022=\n\013up" +
       "per_bound\030\005 \003(\0132(.org.jetbrains.kotlin.s",
       "erialization.Type\"$\n\010Variance\022\006\n\002IN\020\000\022\007\n" +
-      "\003OUT\020\001\022\007\n\003INV\020\002\"\364\005\n\005Class\022\020\n\005flags\030\001 \001(\005" +
+      "\003OUT\020\001\022\007\n\003INV\020\002\"\217\006\n\005Class\022\020\n\005flags\030\001 \001(\005" +
       ":\0010\022\030\n\020extra_visibility\030\002 \001(\t\022\017\n\007fq_name" +
       "\030\003 \002(\005\022K\n\014class_object\030\004 \001(\01325.org.jetbr" +
       "ains.kotlin.serialization.Class.ClassObj" +
@@ -17754,38 +17867,39 @@ public final class DebugProtoBuf {
       "otlin.serialization.Callable\022\022\n\nenum_ent" +
       "ry\030\014 \003(\005\022Y\n\023primary_constructor\030\r \001(\0132<." +
       "org.jetbrains.kotlin.serialization.Class" +
-      ".PrimaryConstructor\032F\n\013ClassObject\0227\n\004da" +
-      "ta\030\001 \001(\0132).org.jetbrains.kotlin.serializ" +
-      "ation.Class\032P\n\022PrimaryConstructor\022:\n\004dat" +
-      "a\030\001 \001(\0132,.org.jetbrains.kotlin.serializa" +
-      "tion.Callable\"p\n\004Kind\022\t\n\005CLASS\020\000\022\t\n\005TRAI" +
-      "T\020\001\022\016\n\nENUM_CLASS\020\002\022\016\n\nENUM_ENTRY\020\003\022\024\n\020A" +
-      "NNOTATION_CLASS\020\004\022\n\n\006OBJECT\020\005\022\020\n\014CLASS_O",
-      "BJECT\020\006*\005\010d\020\310\001\"N\n\007Package\022<\n\006member\030\001 \003(" +
-      "\0132,.org.jetbrains.kotlin.serialization.C" +
-      "allable*\005\010d\020\310\001\"\332\005\n\010Callable\022\r\n\005flags\030\001 \001" +
-      "(\005\022\030\n\020extra_visibility\030\002 \001(\t\022\024\n\014getter_f" +
-      "lags\030\t \001(\005\022\024\n\014setter_flags\030\n \001(\005\022I\n\016type" +
-      "_parameter\030\004 \003(\01321.org.jetbrains.kotlin." +
-      "serialization.TypeParameter\022?\n\rreceiver_" +
-      "type\030\005 \001(\0132(.org.jetbrains.kotlin.serial" +
-      "ization.Type\022\014\n\004name\030\006 \002(\005\022T\n\017value_para" +
-      "meter\030\007 \003(\0132;.org.jetbrains.kotlin.seria",
-      "lization.Callable.ValueParameter\022=\n\013retu" +
-      "rn_type\030\010 \002(\0132(.org.jetbrains.kotlin.ser" +
-      "ialization.Type\032\263\001\n\016ValueParameter\022\r\n\005fl" +
-      "ags\030\001 \001(\005\022\014\n\004name\030\002 \002(\005\0226\n\004type\030\003 \002(\0132(." +
+      ".PrimaryConstructor\032a\n\013ClassObject\022\031\n\021cl" +
+      "ass_object_name\030\001 \001(\005\0227\n\004data\030\002 \001(\0132).or" +
+      "g.jetbrains.kotlin.serialization.Class\032P" +
+      "\n\022PrimaryConstructor\022:\n\004data\030\001 \001(\0132,.org" +
+      ".jetbrains.kotlin.serialization.Callable" +
+      "\"p\n\004Kind\022\t\n\005CLASS\020\000\022\t\n\005TRAIT\020\001\022\016\n\nENUM_C" +
+      "LASS\020\002\022\016\n\nENUM_ENTRY\020\003\022\024\n\020ANNOTATION_CLA",
+      "SS\020\004\022\n\n\006OBJECT\020\005\022\020\n\014CLASS_OBJECT\020\006*\005\010d\020\310" +
+      "\001\"N\n\007Package\022<\n\006member\030\001 \003(\0132,.org.jetbr" +
+      "ains.kotlin.serialization.Callable*\005\010d\020\310" +
+      "\001\"\332\005\n\010Callable\022\r\n\005flags\030\001 \001(\005\022\030\n\020extra_v" +
+      "isibility\030\002 \001(\t\022\024\n\014getter_flags\030\t \001(\005\022\024\n" +
+      "\014setter_flags\030\n \001(\005\022I\n\016type_parameter\030\004 " +
+      "\003(\01321.org.jetbrains.kotlin.serialization" +
+      ".TypeParameter\022?\n\rreceiver_type\030\005 \001(\0132(." +
       "org.jetbrains.kotlin.serialization.Type\022" +
-      "E\n\023vararg_element_type\030\004 \001(\0132(.org.jetbr" +
-      "ains.kotlin.serialization.Type*\005\010d\020\310\001\"Q\n" +
-      "\nMemberKind\022\017\n\013DECLARATION\020\000\022\021\n\rFAKE_OVE" +
-      "RRIDE\020\001\022\016\n\nDELEGATION\020\002\022\017\n\013SYNTHESIZED\020\003" +
-      "\":\n\014CallableKind\022\007\n\003FUN\020\000\022\007\n\003VAL\020\001\022\007\n\003VA",
-      "R\020\002\022\017\n\013CONSTRUCTOR\020\003*\005\010d\020\310\001*-\n\010Modality\022" +
-      "\t\n\005FINAL\020\000\022\010\n\004OPEN\020\001\022\014\n\010ABSTRACT\020\002*b\n\nVi" +
-      "sibility\022\014\n\010INTERNAL\020\000\022\013\n\007PRIVATE\020\001\022\r\n\tP" +
-      "ROTECTED\020\002\022\n\n\006PUBLIC\020\003\022\023\n\017PRIVATE_TO_THI" +
-      "S\020\004\022\t\n\005EXTRA\020\005B\022B\rDebugProtoBuf\210\001\000"
+      "\014\n\004name\030\006 \002(\005\022T\n\017value_parameter\030\007 \003(\0132;",
+      ".org.jetbrains.kotlin.serialization.Call" +
+      "able.ValueParameter\022=\n\013return_type\030\010 \002(\013" +
+      "2(.org.jetbrains.kotlin.serialization.Ty" +
+      "pe\032\263\001\n\016ValueParameter\022\r\n\005flags\030\001 \001(\005\022\014\n\004" +
+      "name\030\002 \002(\005\0226\n\004type\030\003 \002(\0132(.org.jetbrains" +
+      ".kotlin.serialization.Type\022E\n\023vararg_ele" +
+      "ment_type\030\004 \001(\0132(.org.jetbrains.kotlin.s" +
+      "erialization.Type*\005\010d\020\310\001\"Q\n\nMemberKind\022\017" +
+      "\n\013DECLARATION\020\000\022\021\n\rFAKE_OVERRIDE\020\001\022\016\n\nDE" +
+      "LEGATION\020\002\022\017\n\013SYNTHESIZED\020\003\":\n\014CallableK",
+      "ind\022\007\n\003FUN\020\000\022\007\n\003VAL\020\001\022\007\n\003VAR\020\002\022\017\n\013CONSTR" +
+      "UCTOR\020\003*\005\010d\020\310\001*-\n\010Modality\022\t\n\005FINAL\020\000\022\010\n" +
+      "\004OPEN\020\001\022\014\n\010ABSTRACT\020\002*b\n\nVisibility\022\014\n\010I" +
+      "NTERNAL\020\000\022\013\n\007PRIVATE\020\001\022\r\n\tPROTECTED\020\002\022\n\n" +
+      "\006PUBLIC\020\003\022\023\n\017PRIVATE_TO_THIS\020\004\022\t\n\005EXTRA\020" +
+      "\005B\022B\rDebugProtoBuf\210\001\000"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -17863,7 +17977,7 @@ public final class DebugProtoBuf {
           internal_static_org_jetbrains_kotlin_serialization_Class_ClassObject_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_org_jetbrains_kotlin_serialization_Class_ClassObject_descriptor,
-              new java.lang.String[] { "Data", });
+              new java.lang.String[] { "ClassObjectName", "Data", });
           internal_static_org_jetbrains_kotlin_serialization_Class_PrimaryConstructor_descriptor =
             internal_static_org_jetbrains_kotlin_serialization_Class_descriptor.getNestedTypes().get(1);
           internal_static_org_jetbrains_kotlin_serialization_Class_PrimaryConstructor_fieldAccessorTable = new

@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.resolve.scopes.StaticScopeForKotlinClass
 import org.jetbrains.kotlin.types.AbstractClassTypeConstructor
 import org.jetbrains.kotlin.types.JetType
 import org.jetbrains.kotlin.serialization.deserialization
-import org.jetbrains.kotlin.name.SpecialNames.getClassObjectName
 import org.jetbrains.kotlin.utils.addIfNotNull
 import org.jetbrains.kotlin.resolve.scopes.JetScope
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
@@ -116,7 +115,12 @@ public class DeserializedClassDescriptor(
         }
         if (!classProto.hasClassObject()) return null
 
-        return c.components.deserializeClass(classId.createNestedClassId(getClassObjectName()))
+        val classObject = classProto.getClassObject()
+        if (classObject.hasClassObjectName()) {
+            val classObjectName = c.nameResolver.getName(classObject.getClassObjectName())
+            return c.components.deserializeClass(classId.createNestedClassId(classObjectName))
+        }
+        return null
     }
 
     override fun getClassObjectDescriptor(): ClassDescriptor? = classObjectDescriptor()

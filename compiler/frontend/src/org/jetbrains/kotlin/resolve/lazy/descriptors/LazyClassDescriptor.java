@@ -45,6 +45,7 @@ import org.jetbrains.kotlin.resolve.lazy.ResolveSession;
 import org.jetbrains.kotlin.resolve.lazy.ScopeProvider;
 import org.jetbrains.kotlin.resolve.lazy.data.JetClassInfoUtil;
 import org.jetbrains.kotlin.resolve.lazy.data.JetClassLikeInfo;
+import org.jetbrains.kotlin.resolve.lazy.data.JetClassOrObjectInfo;
 import org.jetbrains.kotlin.resolve.lazy.data.SyntheticClassObjectInfo;
 import org.jetbrains.kotlin.resolve.lazy.declarations.ClassMemberDeclarationProvider;
 import org.jetbrains.kotlin.resolve.scopes.*;
@@ -61,7 +62,6 @@ import java.util.*;
 
 import static org.jetbrains.kotlin.diagnostics.Errors.CLASS_OBJECT_NOT_ALLOWED;
 import static org.jetbrains.kotlin.diagnostics.Errors.TYPE_PARAMETERS_IN_ENUM;
-import static org.jetbrains.kotlin.name.SpecialNames.getClassObjectName;
 import static org.jetbrains.kotlin.resolve.DescriptorUtils.isSyntheticClassObject;
 import static org.jetbrains.kotlin.resolve.ModifiersChecker.*;
 import static org.jetbrains.kotlin.resolve.source.SourcePackage.toSourceElement;
@@ -382,12 +382,15 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     @Nullable
     private LazyClassDescriptor computeClassObjectDescriptor(@Nullable JetClassObject classObject) {
         JetClassLikeInfo classObjectInfo = getClassObjectInfo(classObject);
+        //TODO_R: would be nice to kotlinize
         if (classObjectInfo instanceof SyntheticClassObjectInfo) {
-            return new LazyClassDescriptor(resolveSession, this, getClassObjectName(), classObjectInfo);
+            return new LazyClassDescriptor(resolveSession, this, SpecialNames.getClassObjectName(), classObjectInfo);
         }
-        if (classObjectInfo != null) {
-            ClassifierDescriptor classObjectDescriptor =
-                    getScopeForMemberLookup().getClassifier(SpecialNames.getClassObjectName());
+        if (classObjectInfo instanceof JetClassOrObjectInfo) {
+            Name name = ((JetClassOrObjectInfo) classObjectInfo).getName();
+            //TODO_R:
+            assert name != null;
+            ClassifierDescriptor classObjectDescriptor = getScopeForMemberLookup().getClassifier(name);
             if (classObjectDescriptor instanceof LazyClassDescriptor) {
                 return (LazyClassDescriptor) classObjectDescriptor;
             }

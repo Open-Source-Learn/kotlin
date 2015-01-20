@@ -213,6 +213,7 @@ private fun generatorForMacro() =
             publicField<ExpressionTypingServices>()
             publicField<ExpressionTypingComponents>()
             publicField<CallResolver>()
+            publicField<TypeResolver>()
 
             field<GlobalContext>(useAsContext = true,
                   init = GivenExpression("org.jetbrains.kotlin.context.ContextPackage.GlobalContext()"))

@@ -75,7 +75,20 @@ public final class K2JSTranslator {
             @NotNull Config config,
             @NotNull Consumer<JsNode> astConsumer // hack for tests
     ) throws TranslationException, IOException {
-        K2JSTranslator translator = new K2JSTranslator(config);
+        return translateWithMainCallParameters(mainCall, files, outputFile, outputPrefixFile, outputPostfixFile, config, null, astConsumer);
+    }
+
+    public static Status<OutputFileCollection> translateWithMainCallParameters(
+            @NotNull MainCallParameters mainCall,
+            @NotNull List<JetFile> files,
+            @NotNull File outputFile,
+            @Nullable File outputPrefixFile,
+            @Nullable File outputPostfixFile,
+            @NotNull Config config,
+            @Nullable AnalysisResult analysisResult,
+            @NotNull Consumer<JsNode> astConsumer // hack for tests
+    ) throws TranslationException, IOException {
+        K2JSTranslator translator = new K2JSTranslator(config, analysisResult);
         TextOutputImpl output = new TextOutputImpl();
         SourceMapBuilder sourceMapBuilder = config.isSourcemap() ? new SourceMap3Builder(outputFile, output, new SourceMapBuilderConsumer()) : null;
         Status<String> codeStatus = translator.generateProgramCode(files, mainCall, output, sourceMapBuilder, astConsumer);
@@ -111,8 +124,12 @@ public final class K2JSTranslator {
     @NotNull
     private final Config config;
 
-    public K2JSTranslator(@NotNull Config config) {
+    @Nullable
+    private AnalysisResult analysisResult;
+
+    public K2JSTranslator(@NotNull Config config, @Nullable AnalysisResult analysisResult) {
         this.config = config;
+        this.analysisResult = analysisResult;
     }
 
     //NOTE: web demo related method
@@ -164,7 +181,9 @@ public final class K2JSTranslator {
     public JsProgram generateProgram(@NotNull List<JetFile> filesToTranslate,
             @NotNull MainCallParameters mainCallParameters)
             throws TranslationException {
-        AnalysisResult analysisResult = TopDownAnalyzerFacadeForJS.analyzeFiles(filesToTranslate, Predicates.<PsiFile>alwaysTrue(), config);
+        if (analysisResult == null) {
+            analysisResult = TopDownAnalyzerFacadeForJS.analyzeFiles(filesToTranslate, Predicates.<PsiFile>alwaysTrue(), config);
+        }
         BindingContext bindingContext = analysisResult.getBindingContext();
         TopDownAnalyzerFacadeForJS.checkForErrors(Config.withJsLibAdded(filesToTranslate, config), bindingContext);
         ModuleDescriptor moduleDescriptor = analysisResult.getModuleDescriptor();

@@ -125,9 +125,13 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
             return COMPILATION_ERROR;
         }
 
-        if (analyzeAndReportErrors(messageCollector, sourcesFiles, config)) {
+        AnalyzerWithCompilerReport analyzerWithCompilerReport = analyzeAndReportErrors(messageCollector, sourcesFiles, config);
+        if (analyzerWithCompilerReport.hasErrors()) {
             return COMPILATION_ERROR;
         }
+
+        AnalysisResult analysisResult = analyzerWithCompilerReport.getAnalysisResult();
+        assert analysisResult != null : "analysisResult should not be null";
 
         File outputPrefixFile = null;
         if (arguments.outputPrefix != null) {
@@ -157,7 +161,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
         try {
             //noinspection unchecked
             status = translateWithMainCallParameters(mainCallParameters, sourcesFiles, outputFile, outputPrefixFile, outputPostfixFile,
-                                                    config, Consumer.EMPTY_CONSUMER);
+                                                    config, analysisResult, Consumer.EMPTY_CONSUMER);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -200,7 +204,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
                                 CompilerMessageLocation.NO_LOCATION);
     }
 
-    private static boolean analyzeAndReportErrors(@NotNull MessageCollector messageCollector,
+    private static AnalyzerWithCompilerReport analyzeAndReportErrors(@NotNull MessageCollector messageCollector,
             @NotNull final List<JetFile> sources, @NotNull final Config config) {
         AnalyzerWithCompilerReport analyzerWithCompilerReport = new AnalyzerWithCompilerReport(messageCollector);
         analyzerWithCompilerReport.analyzeAndReport(sources, new Function0<AnalysisResult>() {
@@ -209,7 +213,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
                 return TopDownAnalyzerFacadeForJS.analyzeFiles(sources, Predicates.<PsiFile>alwaysTrue(), config);
             }
         });
-        return analyzerWithCompilerReport.hasErrors();
+        return analyzerWithCompilerReport;
     }
 
     @NotNull

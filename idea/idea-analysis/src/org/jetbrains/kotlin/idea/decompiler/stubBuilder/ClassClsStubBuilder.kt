@@ -31,7 +31,6 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.JetDelegationSpecifierList
 import org.jetbrains.kotlin.psi.JetDelegatorToSuperClass
 import org.jetbrains.kotlin.lexer.JetTokens
-import org.jetbrains.kotlin.name.SpecialNames.getClassObjectName
 import org.jetbrains.kotlin.psi.JetClassObject
 import org.jetbrains.kotlin.serialization.deserialization.ProtoContainer
 import org.jetbrains.kotlin.psi.stubs.impl.KotlinModifierListStubImpl

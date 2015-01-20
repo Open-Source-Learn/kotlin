@@ -33,7 +33,6 @@ import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.annotations.Annotations;
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorBase;
 import org.jetbrains.kotlin.name.Name;
-import org.jetbrains.kotlin.name.SpecialNames;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.BindingContext;
 import org.jetbrains.kotlin.resolve.DescriptorUtils;
@@ -383,9 +382,6 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     private LazyClassDescriptor computeClassObjectDescriptor(@Nullable JetClassObject classObject) {
         JetClassLikeInfo classObjectInfo = getClassObjectInfo(classObject);
         //TODO_R: would be nice to kotlinize
-        if (classObjectInfo instanceof SyntheticClassObjectInfo) {
-            return new LazyClassDescriptor(resolveSession, this, SpecialNames.getClassObjectName(), classObjectInfo);
-        }
         if (classObjectInfo instanceof JetClassOrObjectInfo) {
             Name name = ((JetClassOrObjectInfo) classObjectInfo).getName();
             //TODO_R:
@@ -402,6 +398,12 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
         if (getKind() == ClassKind.CLASS_OBJECT || getKind() == ClassKind.OBJECT) {
             return this;
         }
+        //TODO_R: do better
+        if (getKind() == ClassKind.ENUM_ENTRY) {
+            DeclarationDescriptor containingDeclaration = getContainingDeclaration();
+            assert containingDeclaration instanceof ClassDescriptor && ((ClassDescriptor) containingDeclaration).getKind() == ClassKind.ENUM_CLASS;
+            return (LazyClassDescriptor) containingDeclaration;
+        }
         return null;
     }
 
@@ -413,10 +415,6 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
             }
 
             return JetClassInfoUtil.createClassLikeInfo(classObject.getObjectDeclaration());
-        }
-        //TODO_R: deal with enum entry
-        else if (getKind() == ClassKind.ENUM_ENTRY) {
-            return new SyntheticClassObjectInfo(originalClassInfo, this);
         }
 
         return null;

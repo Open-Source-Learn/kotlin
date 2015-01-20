@@ -181,11 +181,12 @@ private class ClassClsStubBuilder(
     }
 
     private fun createClassObjectStub(classBody: KotlinPlaceHolderStubImpl<JetClassBody>) {
-        if (!classProto.hasClassObject() || classKind == ProtoBuf.Class.Kind.OBJECT) {
+        //TODO_R:
+        if (!classProto.hasClassObject() || classKind == ProtoBuf.Class.Kind.OBJECT || classKind == ProtoBuf.Class.Kind.CLASS_OBJECT) {
             return
         }
 
-        val classObjectId = classId.createNestedClassId(getClassObjectName())
+        val classObjectId = classId.createNestedClassId(c.nameResolver.getName(classProto.getClassObject().getClassObjectName()))
         createNestedClassStub(classBody, classObjectId)
     }
 

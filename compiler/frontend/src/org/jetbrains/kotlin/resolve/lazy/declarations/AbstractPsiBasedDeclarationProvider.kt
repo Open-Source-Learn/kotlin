@@ -49,12 +49,7 @@ public abstract class AbstractPsiBasedDeclarationProvider(storageManager: Storag
                 properties.put(safeNameForLazyResolve(declaration), declaration)
             }
             else if (declaration is JetClassOrObject) {
-                if (declaration is JetObjectDeclaration && declaration.isClassObject()) {
-                    classesAndObjects.put(SpecialNames.DEFAULT_NAME_FOR_DEFAULT_OBJECT, JetClassInfoUtil.createClassLikeInfo(declaration))
-                }
-                else {
-                    classesAndObjects.put(safeNameForLazyResolve(declaration.getNameAsName()), JetClassInfoUtil.createClassLikeInfo(declaration))
-                }
+                classesAndObjects.put(safeNameForLazyResolve(declaration.getNameAsName()), JetClassInfoUtil.createClassLikeInfo(declaration))
             }
             else if (declaration is JetScript) {
                 val scriptInfo = JetScriptInfo(declaration)

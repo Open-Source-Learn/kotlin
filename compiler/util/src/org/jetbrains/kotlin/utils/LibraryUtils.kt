@@ -28,6 +28,12 @@ import java.util.jar.JarFile
 import java.util.jar.Manifest
 import java.util.zip.ZipFile
 import kotlin.platform.platformStatic
+import com.intellij.openapi.util.text.StringUtil
+import javax.xml.bind.DatatypeConverter.parseBase64Binary
+import javax.xml.bind.DatatypeConverter.printBase64Binary
+import java.util.zip.GZIPOutputStream
+import javax.xml.bind.DatatypeConverter
+import java.util.zip.GZIPInputStream
 
 public object LibraryUtils {
     private val LOG = Logger.getInstance(javaClass<LibraryUtils>())
@@ -40,6 +46,7 @@ public object LibraryUtils {
     private val MANIFEST_PATH = "${METAINF}MANIFEST.MF"
     private val METAINF_RESOURCES = "${METAINF}resources/"
     private val KOTLIN_JS_MODULE_ATTRIBUTE_NAME = Attributes.Name(KOTLIN_JS_MODULE_NAME);
+    private val ABI_VERSION = 1
 
     {
         var jsStdLib = ""
@@ -105,6 +112,83 @@ public object LibraryUtils {
                 copyJsFilesFromZip(file, outputLibraryJsPath)
             }
         }
+    }
+
+    platformStatic
+    public fun writeMetadata(moduleName: String, packages: Set<String>, content: Map<String, ByteArray>, metaFile: File) {
+        val stringBuilder = StringBuilder()
+        stringBuilder.append(ABI_VERSION)
+        stringBuilder.append(",")
+        stringBuilder.append(moduleName)
+        stringBuilder.append(";")
+        stringBuilder.append(packagesAndContentToBase64(packages, content))
+        FileUtil.writeToFile(metaFile, stringBuilder.toString())
+    }
+
+    public class Metadata(val abiVersion: Int, val moduleName: String, val packages: Array<String>, val files: Map<String, ByteArray>)
+
+    platformStatic
+    public fun loadMetadata(text: String): Metadata {
+        val index0 = text.indexOf(',')
+        assert(index0 > 0)
+        val abiVersion = Integer.parseInt(text.substring(0, index0))
+
+        val index1 = text.indexOf(';')
+        assert(index1 > 0)
+        val moduleName = text.substring(index0 + 1, index1)
+        val body = parseBase64Binary(text.substring(index1 + 1))
+        val gzip = GZIPInputStream(ByteArrayInputStream(body))
+        val reader = BufferedReader(InputStreamReader(gzip, "UTF-8"))
+        val content =  reader.readLine()
+        reader.close()
+        val packages = getPackages(content)
+        val files = getContent(content)
+        return Metadata(abiVersion, moduleName, packages, files)
+    }
+
+    private fun getPackages(content: String): Array<String> {
+        val index = content.indexOf(";")
+        assert(index >= 0)
+        return content.substring(0, index).split(",")
+    }
+
+    private fun getContent(content: String): Map<String, ByteArray> {
+        val result = hashMapOf<String, ByteArray>()
+
+        val index = content.indexOf(";")
+        assert(index >= 0)
+        val entries = content.substring(index + 1).split(";")
+        for (entry in entries) {
+            val pair = entry.split(",")
+            if (pair.size() == 1) {
+                result.put(pair[0], ByteArray(0))
+            }
+            else {
+                assert(pair.size() == 2)
+                result.put(pair[0], parseBase64Binary(pair[1]))
+            }
+        }
+
+        return result
+    }
+
+    private fun packagesAndContentToBase64(packages: Set<String>, content: Map<String, ByteArray>): String {
+        val stringBuilder = StringBuilder()
+        StringUtil.join(packages, ",", stringBuilder)
+        stringBuilder.append(";")
+        val classEntries = hashSetOf<String>()
+        content.forEach {
+            val (key, value) = it
+            classEntries.add(key + "," + printBase64Binary(value))
+        }
+        StringUtil.join(classEntries, ";", stringBuilder)
+
+        val byteStream = ByteArrayOutputStream()
+        val gzipOutputStream = GZIPOutputStream(byteStream)
+        gzipOutputStream.write(stringBuilder.toString().toByteArray())
+        gzipOutputStream.close()
+
+        return printBase64Binary(byteStream.toByteArray())
     }
 
     private fun copyJsFilesFromDirectory(dir: File, outputLibraryJsPath: String) {

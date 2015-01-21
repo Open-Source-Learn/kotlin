@@ -31,7 +31,8 @@ public class KotlinExpressionSurroundDescriptor implements SurroundDescriptor {
             new KotlinStringTemplateSurrounder(),
             new KotlinParenthesesSurrounder(),
             new KotlinWhenSurrounder() ,
-            new KotlinRuntimeTypeCastSurrounder()
+            new KotlinRuntimeTypeCastSurrounder(),
+            new KotlinAsCastSurrounder()
     };
 
     @Override

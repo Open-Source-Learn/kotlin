@@ -84,21 +84,22 @@ class LazyFileScope private(
             val defaultAllUnderImportResolver = LazyImportResolver(resolveSession, rootPackageView, AllUnderImportsIndexed(defaultImports), traceForDefaultImportResolve, false)
 
             val scopeChain = ArrayList<JetScope>()
+            with(scopeChain) {
+                add(LazyImportScope(aliasImportResolver, { true }, "Alias imports in $debugName"))
 
-            scopeChain.add(LazyImportScope(aliasImportResolver, { true }, "Alias imports in $debugName"))
+                add(NoSubpackagesInPackageScope(packageView)) //TODO: problems with visibility too
+                add(JetModuleUtil.getSubpackagesOfRootScope(resolveSession.getModuleDescriptor()))
 
-            scopeChain.add(NoSubpackagesInPackageScope(packageView)) //TODO: problems with visibility too
-            scopeChain.add(JetModuleUtil.getSubpackagesOfRootScope(resolveSession.getModuleDescriptor()))
+                add(LazyImportScope(defaultAliasImportResolver, { true }, "Default alias imports in $debugName"))
 
-            scopeChain.add(LazyImportScope(defaultAliasImportResolver, { true }, "Default alias imports in $debugName"))
+                add(LazyImportScope(defaultAllUnderImportResolver, onlyVisibleFilter, "Default all under imports in $debugName (visible classes)"))
+                add(LazyImportScope(allUnderImportResolver, onlyVisibleFilter, "All under imports in $debugName (visible classes)"))
 
-            scopeChain.add(LazyImportScope(defaultAllUnderImportResolver, onlyVisibleFilter, "Default all under imports in $debugName (visible classes)"))
-            scopeChain.add(LazyImportScope(allUnderImportResolver, onlyVisibleFilter, "All under imports in $debugName (visible classes)"))
+                addAll(additionalScopes)
 
-            scopeChain.addAll(additionalScopes)
-
-            scopeChain.add(LazyImportScope(defaultAllUnderImportResolver, onlyInvisibleFilter, "Default all under imports in $debugName (invisible classes only)"))
-            scopeChain.add(LazyImportScope(allUnderImportResolver, onlyInvisibleFilter, "All under imports in $debugName (invisible classes only)"))
+                add(LazyImportScope(defaultAllUnderImportResolver, onlyInvisibleFilter, "Default all under imports in $debugName (invisible classes only)"))
+                add(LazyImportScope(allUnderImportResolver, onlyInvisibleFilter, "All under imports in $debugName (invisible classes only)"))
+            }
 
             return LazyFileScope(scopeChain, aliasImportResolver, allUnderImportResolver, packageFragment, debugName)
         }

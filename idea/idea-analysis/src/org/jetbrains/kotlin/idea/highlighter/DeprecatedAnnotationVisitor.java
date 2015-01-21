@@ -118,6 +118,7 @@ public class DeprecatedAnnotationVisitor extends AfterAnalysisHighlightingVisito
         if (!reportAnnotationIfNeeded(expression, target)) {
             if (PsiTreeUtil.getParentOfType(expression, JetUserType.class) == null &&
                 PsiTreeUtil.getParentOfType(expression, JetModifierList.class) == null) {
+                //TODO_R:
                 ClassDescriptor classObjectDescriptor = target.getClassObjectDescriptor();
                 if (classObjectDescriptor != null) {
                     reportAnnotationIfNeeded(expression, classObjectDescriptor);

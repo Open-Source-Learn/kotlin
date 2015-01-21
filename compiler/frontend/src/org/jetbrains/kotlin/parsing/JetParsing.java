@@ -876,13 +876,9 @@ public class JetParsing extends AbstractJetParsing {
      */
     private IElementType parseClassObject() {
         assert _at(CLASS_KEYWORD) && lookahead(1) == OBJECT_KEYWORD;
-
         advance(); // CLASS_KEYWORD
-
-        PsiBuilder.Marker objectDeclaration = mark();
         parseObject(false, true, true);
-        closeDeclarationWithCommentBinders(objectDeclaration, OBJECT_DECLARATION, true);
-        return CLASS_OBJECT;
+        return OBJECT_DECLARATION;
     }
 
     /*

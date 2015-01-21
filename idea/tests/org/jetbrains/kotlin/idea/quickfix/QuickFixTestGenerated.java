@@ -352,6 +352,12 @@ public class QuickFixTestGenerated extends AbstractQuickFixTest {
             JetTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/quickfix/autoImports"), Pattern.compile("^before(\\w+)\\.kt$"), true);
         }
 
+        @TestMetadata("beforeAmbiguousClassName.kt")
+        public void testAmbiguousClassName() throws Exception {
+            String fileName = JetTestUtils.navigationMetadata("idea/testData/quickfix/autoImports/beforeAmbiguousClassName.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("beforeCheckNoStackOverflowInImportInnerClassInCurrentFile.kt")
         public void testCheckNoStackOverflowInImportInnerClassInCurrentFile() throws Exception {
             String fileName = JetTestUtils.navigationMetadata("idea/testData/quickfix/autoImports/beforeCheckNoStackOverflowInImportInnerClassInCurrentFile.kt");

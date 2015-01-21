@@ -127,25 +127,6 @@ public class CliLightClassGenerationSupport extends LightClassGenerationSupport 
             }
         }
 
-        //TODO_R:?
-        //if (JvmAbi.isClassObjectFqName(fqName)) {
-        //    Collection<JetClassOrObject> parentClasses = findClassOrObjectDeclarations(fqName.parent(), searchScope);
-        //    return ContainerUtil.mapNotNull(parentClasses,
-        //                                    new Function<JetClassOrObject, JetClassOrObject>() {
-        //                                        @Override
-        //                                        public JetClassOrObject fun(JetClassOrObject classOrObject) {
-        //                                            if (classOrObject instanceof JetClass) {
-        //                                                JetClass jetClass = (JetClass) classOrObject;
-        //                                                JetClassObject classObject = jetClass.getClassObject();
-        //                                                if (classObject != null) {
-        //                                                    return classObject.getObjectDeclaration();
-        //                                                }
-        //                                            }
-        //                                            return null;
-        //                                        }
-        //                                    });
-        //}
-
         return Collections.emptyList();
     }
 

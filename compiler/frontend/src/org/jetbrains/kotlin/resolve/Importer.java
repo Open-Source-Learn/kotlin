@@ -95,6 +95,7 @@ public interface Importer {
                 scopesToImport.add(classDescriptor.getStaticScope());
                 scopesToImport.add(classDescriptor.getUnsubstitutedInnerClassesScope());
                 ClassDescriptor classObjectDescriptor = classDescriptor.getClassObjectDescriptor();
+                //TODO_R:
                 if (classObjectDescriptor != null) {
                     scopesToImport.add(classObjectDescriptor.getUnsubstitutedInnerClassesScope());
                 }

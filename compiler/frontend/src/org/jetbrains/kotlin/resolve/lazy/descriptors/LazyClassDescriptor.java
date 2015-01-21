@@ -270,6 +270,7 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
         thisScope.setImplicitReceiver(this.getThisAsReceiverParameter());
         thisScope.changeLockLevel(WritableScope.LockLevel.READING);
 
+        //TODO:
         ClassDescriptor classObject = getClassObjectDescriptor();
         JetScope classObjectAdapterScope = (classObject != null) ? new ClassObjectMixinScope(classObject) : JetScope.Empty.INSTANCE$;
 
@@ -477,6 +478,7 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
 
     private void doForceResolveAllContents() {
         resolveMemberHeaders();
+        //TODO:
         ClassDescriptor classObjectDescriptor = getClassObjectDescriptor();
         if (classObjectDescriptor != null) {
             ForceResolveUtil.forceResolveAllContents(classObjectDescriptor);

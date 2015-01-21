@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.idea.JetBundle;
 import org.jetbrains.kotlin.idea.caches.resolve.ResolvePackage;
 import org.jetbrains.kotlin.idea.codeInsight.ShortenReferences;
+import org.jetbrains.kotlin.idea.codeInsight.ShorteningOptions;
 import org.jetbrains.kotlin.idea.util.IdeDescriptorRenderers;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.BindingContext;
@@ -47,7 +48,7 @@ public class ReconstructTypeInCastOrIsAction extends PsiElementBaseIntentionActi
         JetType type = getReconstructedType(typeRef);
         JetTypeReference newType = JetPsiFactory(typeRef).createType(IdeDescriptorRenderers.SOURCE_CODE.renderType(type));
         JetTypeReference replaced = (JetTypeReference) typeRef.replace(newType);
-        ShortenReferences.INSTANCE$.process(replaced);
+        ShortenReferences.INSTANCE$.process(replaced, ShorteningOptions.DEFAULT);
     }
 
     @Override

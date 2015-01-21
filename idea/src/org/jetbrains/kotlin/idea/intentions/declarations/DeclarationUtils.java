@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.idea.caches.resolve.ResolvePackage;
 import org.jetbrains.kotlin.idea.codeInsight.ShortenReferences;
+import org.jetbrains.kotlin.idea.codeInsight.ShorteningOptions;
 import org.jetbrains.kotlin.idea.util.IdeDescriptorRenderers;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.BindingContext;
@@ -82,7 +83,7 @@ public class DeclarationUtils {
         );
 
         if (inferredType != null) {
-            ShortenReferences.INSTANCE$.process(property.getTypeReference());
+            ShortenReferences.INSTANCE$.process(property.getTypeReference(), ShorteningOptions.DEFAULT);
         }
 
         return newInitializer;

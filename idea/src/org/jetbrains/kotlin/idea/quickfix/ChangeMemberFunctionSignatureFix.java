@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.diagnostics.Diagnostic;
 import org.jetbrains.kotlin.idea.JetBundle;
 import org.jetbrains.kotlin.idea.caches.resolve.ResolvePackage;
 import org.jetbrains.kotlin.idea.codeInsight.ShortenReferences;
+import org.jetbrains.kotlin.idea.codeInsight.ShorteningOptions;
 import org.jetbrains.kotlin.idea.util.IdeDescriptorRenderers;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.psi.*;
@@ -376,11 +377,11 @@ public class ChangeMemberFunctionSignatureFix extends JetHintAction<JetNamedFunc
 
                             JetTypeReference newTypeRef = function.setTypeReference(patternFunction.getTypeReference());
                             if (newTypeRef != null) {
-                                ShortenReferences.INSTANCE$.process(newTypeRef);
+                                ShortenReferences.INSTANCE$.process(newTypeRef, ShorteningOptions.DEFAULT);
                             }
 
                             JetParameterList newParameterList = (JetParameterList) function.getValueParameterList().replace(patternFunction.getValueParameterList());
-                            ShortenReferences.INSTANCE$.process(newParameterList);
+                            ShortenReferences.INSTANCE$.process(newParameterList, ShorteningOptions.DEFAULT);
                         }
                     });
                 }

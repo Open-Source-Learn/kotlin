@@ -38,16 +38,35 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.getImportableDescriptor
 import org.jetbrains.kotlin.idea.caches.resolve.ResolutionFacade
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 
+public data class ShorteningOptions(
+        val removeThisLabels: Boolean = false,
+        val removeThis: Boolean = false
+) {
+    class object {
+        val DEFAULT = ShorteningOptions()
+    }
+}
+
 public object ShortenReferences {
-    public fun process(element: JetElement) {
-        process(listOf(element))
+    public fun process(element: JetElement, options: ShorteningOptions = ShorteningOptions.DEFAULT) {
+        process(listOf(element), { options })
     }
 
+    // todo: replace with default parameter when all Java usages are rewritten to Kotlin
     public fun process(elements: Iterable<JetElement>) {
-        process(elements, { FilterResult.PROCESS })
+        process(elements, { FilterResult.PROCESS }, { ShorteningOptions.DEFAULT })
     }
 
-    public fun process(file: JetFile, startOffset: Int, endOffset: Int) {
+    public fun process(elements: Iterable<JetElement>, options: (PsiElement) -> ShorteningOptions) {
+        process(elements, { FilterResult.PROCESS }, options)
+    }
+
+    public fun process(
+            file: JetFile,
+            startOffset: Int,
+            endOffset: Int,
+            options: (PsiElement) -> ShorteningOptions = { ShorteningOptions.DEFAULT }
+    ) {
         val documentManager = PsiDocumentManager.getInstance(file.getProject())
         val document = documentManager.getDocument(file)!!
         if (!documentManager.isCommitted(document)) {
@@ -86,7 +105,7 @@ public object ShortenReferences {
                 else {
                     FilterResult.SKIP
                 }
-            })
+            }, options)
         }
         finally {
             rangeMarker.dispose()
@@ -104,7 +123,8 @@ public object ShortenReferences {
                 file,
                 referenceToContext.keySet().map { (it as JetSimpleNameExpression).getQualifiedElement() },
                 referenceToContext,
-                { FilterResult.PROCESS }
+                { FilterResult.PROCESS },
+                { ShorteningOptions.DEFAULT }
         )
     }
 
@@ -126,26 +146,35 @@ public object ShortenReferences {
             file: JetFile,
             elements: List<JetElement>,
             referenceToContext: Map<JetReferenceExpression, BindingContext>,
-            elementFilter: (PsiElement) -> FilterResult
+            elementFilter: (PsiElement) -> FilterResult,
+            options: (PsiElement) -> ShorteningOptions
     ) {
         val importInserter = ImportInserter(file)
         
-        processElements(elements, ShortenTypesVisitor(file, elementFilter, referenceToContext, importInserter))
-        processElements(elements, ShortenQualifiedExpressionsVisitor(file, elementFilter, referenceToContext, importInserter))
-        processElements(elements, ShortenThisExpressionsVisitor(file, elementFilter, referenceToContext, importInserter))
+        processElements(elements, ShortenTypesVisitor(file, elementFilter, referenceToContext, importInserter), options)
+        processElements(elements, ShortenQualifiedExpressionsVisitor(file, elementFilter, referenceToContext, importInserter), options)
+        processElements(elements, ShortenThisExpressionsVisitor(file, elementFilter, referenceToContext, importInserter), options)
     }
 
-    private fun process(elements: Iterable<JetElement>, elementFilter: (PsiElement) -> FilterResult) {
+    private fun process(
+            elements: Iterable<JetElement>,
+            elementFilter: (PsiElement) -> FilterResult,
+            options: (PsiElement) -> ShorteningOptions
+    ) {
         for ((file, fileElements) in elements.groupBy { element -> element.getContainingJetFile() }) {
             // first resolve all qualified references - optimization
             val referenceToContext = resolveReferencesInFile(file, fileElements)
-            shortenReferencesInFile(file, fileElements, referenceToContext, elementFilter)
+            shortenReferencesInFile(file, fileElements, referenceToContext, elementFilter, options)
         }
     }
 
-    private fun processElements(elements: Iterable<JetElement>, visitor: ShorteningVisitor<*>) {
+    private fun processElements(
+            elements: Iterable<JetElement>,
+            visitor: ShorteningVisitor<*>,
+            options: (PsiElement) -> ShorteningOptions
+    ) {
         for (element in elements) {
-            element.accept(visitor)
+            element.accept(visitor, options(element))
         }
         visitor.finish()
     }
@@ -154,7 +183,7 @@ public object ShortenReferences {
             val file: JetFile,
             val elementFilter: (PsiElement) -> FilterResult,
             val resolveMap: Map<JetReferenceExpression, BindingContext>,
-            val importInserter: ImportInserter) : JetVisitorVoid() {
+            val importInserter: ImportInserter) : JetVisitorVoidWithParameter<ShorteningOptions>() {
         protected val resolutionFacade: ResolutionFacade
             get() = file.getResolutionFacade()
 
@@ -164,6 +193,12 @@ public object ShortenReferences {
                 = resolveMap[element] ?: resolutionFacade.analyze(element)
 
         protected abstract fun getShortenedElement(element: T): JetElement?
+
+        override fun visitJetElementVoid(element: JetElement, options: ShorteningOptions?) {
+            if (elementFilter(element) != FilterResult.SKIP) {
+                element.acceptChildren(this, options)
+            }
+        }
 
         override fun visitElement(element: PsiElement) {
             if (elementFilter(element) != FilterResult.SKIP) {
@@ -214,17 +249,17 @@ public object ShortenReferences {
             }
         }
 
-        override fun visitUserType(userType: JetUserType) {
+        override fun visitUserTypeVoid(userType: JetUserType, options: ShorteningOptions) {
             val filterResult = elementFilter(userType)
             if (filterResult == FilterResult.SKIP) return
 
-            userType.getTypeArgumentList()?.accept(this)
+            userType.getTypeArgumentList()?.accept(this, options)
 
             if (filterResult == FilterResult.PROCESS && canShortenType(userType)) {
                 elementsToShorten.add(userType)
             }
             else{
-                userType.getQualifier()?.accept(this)
+                userType.getQualifier()?.accept(this, options)
             }
         }
 
@@ -242,11 +277,12 @@ public object ShortenReferences {
             resolveMap: Map<JetReferenceExpression, BindingContext>,
             importInserter: ImportInserter
     ) : ShorteningVisitor<JetQualifiedExpression>(file, elementFilter, resolveMap, importInserter) {
-        private fun canShorten(qualifiedExpression: JetDotQualifiedExpression): Boolean {
+        private fun canShorten(qualifiedExpression: JetDotQualifiedExpression, options: ShorteningOptions): Boolean {
             val context = bindingContext(qualifiedExpression)
 
             val receiver = qualifiedExpression.getReceiverExpression()
             if (receiver !is JetThisExpression && context[BindingContext.QUALIFIER, receiver] == null) return false
+            if (receiver is JetThisExpression && !options.removeThis) return false
 
             if (PsiTreeUtil.getParentOfType(
                     qualifiedExpression,
@@ -268,23 +304,23 @@ public object ShortenReferences {
             }
 
             if (importInserter.optimizeImports()) {
-                return canShorten(qualifiedExpression) // if we have optimized imports then try again
+                return canShorten(qualifiedExpression, options) // if we have optimized imports then try again
             }
 
             return false
         }
 
-        override fun visitDotQualifiedExpression(expression: JetDotQualifiedExpression) {
+        override fun visitDotQualifiedExpressionVoid(expression: JetDotQualifiedExpression, options: ShorteningOptions) {
             val filterResult = elementFilter(expression)
             if (filterResult == FilterResult.SKIP) return
 
-            expression.getSelectorExpression()?.acceptChildren(this)
+            expression.getSelectorExpression()?.acceptChildren(this, options)
 
-            if (filterResult == FilterResult.PROCESS && canShorten(expression)) {
+            if (filterResult == FilterResult.PROCESS && canShorten(expression, options)) {
                 elementsToShorten.add(expression)
             }
             else {
-                expression.getReceiverExpression().accept(this)
+                expression.getReceiverExpression().accept(this, options)
             }
         }
 
@@ -299,8 +335,8 @@ public object ShortenReferences {
     ) : ShorteningVisitor<JetThisExpression>(file, elementFilter, resolveMap, importInserter) {
         private val simpleThis = JetPsiFactory(file).createExpression("this") as JetThisExpression
 
-        private fun canShorten(thisExpression: JetThisExpression): Boolean {
-            if (!thisExpression.isValid() || thisExpression.getTargetLabel() == null) return false;
+        private fun canShorten(thisExpression: JetThisExpression, options: ShorteningOptions): Boolean {
+            if (!options.removeThisLabels || !thisExpression.isValid() || thisExpression.getTargetLabel() == null) return false
 
             val context = bindingContext(thisExpression)
             val targetBefore = thisExpression.getInstanceReference().getTargets(context).singleOrNull() ?: return false
@@ -311,8 +347,8 @@ public object ShortenReferences {
             return targetsAfter.size() == 1 && targetBefore == targetsAfter.first()
         }
 
-        override fun visitThisExpression(expression: JetThisExpression) {
-            if (elementFilter(expression) == FilterResult.PROCESS && canShorten(expression)) {
+        override fun visitThisExpressionVoid(expression: JetThisExpression, options: ShorteningOptions) {
+            if (elementFilter(expression) == FilterResult.PROCESS && canShorten(expression, options)) {
                 elementsToShorten.add(expression)
             }
         }

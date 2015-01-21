@@ -360,6 +360,31 @@ public class TypeHierarchyResolver {
 
         @Override
         public void visitObjectDeclaration(@NotNull JetObjectDeclaration declaration) {
+            if (declaration.isClassObject()) {
+                DeclarationDescriptor container = owner.getOwnerForChildren();
+
+                MutableClassDescriptor classObjectDescriptor =
+                        createClassDescriptorForSingleton(declaration, getClassObjectName(), ClassKind.CLASS_OBJECT);
+
+                PackageLikeBuilder.ClassObjectStatus status =
+                        isEnumEntry(container) || isObject(container) || c.getTopDownAnalysisParameters().isDeclaredLocally() ?
+                        PackageLikeBuilder.ClassObjectStatus.NOT_ALLOWED :
+                        owner.setClassObjectDescriptor(classObjectDescriptor);
+
+                switch (status) {
+                    case DUPLICATE:
+                        trace.report(MANY_CLASS_OBJECTS.on(declaration));
+                        break;
+                    case NOT_ALLOWED:
+                        trace.report(CLASS_OBJECT_NOT_ALLOWED.on(declaration));
+                        break;
+                    case OK:
+                        // Everything is OK so no errors to trace.
+                        break;
+                }
+                return;
+            }
+
             if (declaration.isObjectLiteral()) {
                 createClassDescriptorForSingleton(declaration, SpecialNames.NO_NAME_PROVIDED, ClassKind.CLASS);
                 return;
@@ -387,33 +412,6 @@ public class TypeHierarchyResolver {
         @Override
         public void visitTypedef(@NotNull JetTypedef typedef) {
             trace.report(UNSUPPORTED.on(typedef, "TypeHierarchyResolver"));
-        }
-
-        @Override
-        public void visitClassObject(@NotNull JetClassObject classObject) {
-            JetObjectDeclaration objectDeclaration = classObject.getObjectDeclaration();
-
-            DeclarationDescriptor container = owner.getOwnerForChildren();
-
-            MutableClassDescriptor classObjectDescriptor =
-                    createClassDescriptorForSingleton(objectDeclaration, getClassObjectName(), ClassKind.CLASS_OBJECT);
-
-            PackageLikeBuilder.ClassObjectStatus status =
-                    isEnumEntry(container) || isObject(container) || c.getTopDownAnalysisParameters().isDeclaredLocally() ?
-                    PackageLikeBuilder.ClassObjectStatus.NOT_ALLOWED :
-                    owner.setClassObjectDescriptor(classObjectDescriptor);
-
-            switch (status) {
-                case DUPLICATE:
-                    trace.report(MANY_CLASS_OBJECTS.on(classObject));
-                    break;
-                case NOT_ALLOWED:
-                    trace.report(CLASS_OBJECT_NOT_ALLOWED.on(classObject));
-                    break;
-                case OK:
-                    // Everything is OK so no errors to trace.
-                    break;
-            }
         }
 
         @NotNull

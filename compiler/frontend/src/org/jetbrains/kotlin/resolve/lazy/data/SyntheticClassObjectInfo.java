@@ -56,13 +56,13 @@ public class SyntheticClassObjectInfo implements JetClassLikeInfo {
 
     @Nullable
     @Override
-    public JetClassObject getClassObject() {
+    public JetObjectDeclaration getClassObject() {
         return null;
     }
 
     @NotNull
     @Override
-    public List<JetClassObject> getClassObjects() {
+    public List<JetObjectDeclaration> getClassObjects() {
         return Collections.emptyList();
     }
 

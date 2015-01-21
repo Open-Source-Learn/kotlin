@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.psi;
 
+import com.google.common.collect.Lists;
 import com.intellij.lang.ASTNode;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.tree.TokenSet;
@@ -65,13 +66,20 @@ public class JetClassBody extends JetElementImplStub<KotlinPlaceHolderStub<JetCl
     }
 
     @Nullable
-    public JetClassObject getClassObject() {
-        return getStubOrPsiChild(CLASS_OBJECT);
+    public JetObjectDeclaration getClassObject() {
+        List<JetObjectDeclaration> classObjects = getAllClassObjects();
+        return classObjects.isEmpty() ? null : classObjects.iterator().next();
     }
 
     @NotNull
-    public List<JetClassObject> getAllClassObjects() {
-        return getStubOrPsiChildrenAsList(JetStubElementTypes.CLASS_OBJECT);
+    public List<JetObjectDeclaration> getAllClassObjects() {
+        List<JetObjectDeclaration> result = Lists.newArrayList();
+        for (JetObjectDeclaration declaration : getStubOrPsiChildrenAsList(JetStubElementTypes.OBJECT_DECLARATION)) {
+            if (declaration.isClassObject()) {
+                result.add(declaration);
+            }
+        }
+        return result;
     }
 
     @Nullable

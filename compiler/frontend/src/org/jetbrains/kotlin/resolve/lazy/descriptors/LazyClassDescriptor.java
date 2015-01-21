@@ -87,7 +87,7 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     private final Annotations annotations;
     private final Annotations danglingAnnotations;
     private final NullableLazyValue<LazyClassDescriptor> classObjectDescriptor;
-    private final MemoizedFunctionToNotNull<JetClassObject, ClassDescriptor> extraClassObjectDescriptors;
+    private final MemoizedFunctionToNotNull<JetObjectDeclaration, ClassDescriptor> extraClassObjectDescriptors;
 
     private final LazyClassMemberScope unsubstitutedMemberScope;
     private final JetScope staticScope = new StaticScopeForKotlinClass(this);
@@ -188,9 +188,9 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
                 return computeClassObjectDescriptor(getClassObjectIfAllowed());
             }
         });
-        this.extraClassObjectDescriptors = storageManager.createMemoizedFunction(new Function1<JetClassObject, ClassDescriptor>() {
+        this.extraClassObjectDescriptors = storageManager.createMemoizedFunction(new Function1<JetObjectDeclaration, ClassDescriptor>() {
             @Override
-            public ClassDescriptor invoke(JetClassObject classObject) {
+            public ClassDescriptor invoke(JetObjectDeclaration classObject) {
                 return computeClassObjectDescriptor(classObject);
             }
         });
@@ -358,21 +358,21 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     @NotNull
     @ReadOnly
     public List<ClassDescriptor> getDescriptorsForExtraClassObjects() {
-        final JetClassObject allowedClassObject = getClassObjectIfAllowed();
+        final JetObjectDeclaration allowedClassObject = getClassObjectIfAllowed();
 
         return KotlinPackage.map(
                 KotlinPackage.filter(
                         declarationProvider.getOwnerInfo().getClassObjects(),
-                        new Function1<JetClassObject, Boolean>() {
+                        new Function1<JetObjectDeclaration, Boolean>() {
                             @Override
-                            public Boolean invoke(JetClassObject classObject) {
+                            public Boolean invoke(JetObjectDeclaration classObject) {
                                 return classObject != allowedClassObject;
                             }
                         }
                 ),
-                new Function1<JetClassObject, ClassDescriptor>() {
+                new Function1<JetObjectDeclaration, ClassDescriptor>() {
                     @Override
-                    public ClassDescriptor invoke(JetClassObject classObject) {
+                    public ClassDescriptor invoke(JetObjectDeclaration classObject) {
                         return extraClassObjectDescriptors.invoke(classObject);
                     }
                 }
@@ -380,7 +380,7 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     }
 
     @Nullable
-    private LazyClassDescriptor computeClassObjectDescriptor(@Nullable JetClassObject classObject) {
+    private LazyClassDescriptor computeClassObjectDescriptor(@Nullable JetObjectDeclaration classObject) {
         JetClassLikeInfo classObjectInfo = getClassObjectInfo(classObject);
         //TODO_R: would be nice to kotlinize
         if (classObjectInfo instanceof JetClassOrObjectInfo) {
@@ -409,21 +409,21 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     }
 
     @Nullable
-    private JetClassLikeInfo getClassObjectInfo(@Nullable JetClassObject classObject) {
+    private JetClassLikeInfo getClassObjectInfo(@Nullable JetObjectDeclaration classObject) {
         if (classObject != null) {
             if (!isClassObjectAllowed()) {
                 resolveSession.getTrace().report(CLASS_OBJECT_NOT_ALLOWED.on(classObject));
             }
 
-            return JetClassInfoUtil.createClassLikeInfo(classObject.getObjectDeclaration());
+            return JetClassInfoUtil.createClassLikeInfo(classObject);
         }
 
         return null;
     }
 
     @Nullable
-    private JetClassObject getClassObjectIfAllowed() {
-        JetClassObject classObject = declarationProvider.getOwnerInfo().getClassObject();
+    private JetObjectDeclaration getClassObjectIfAllowed() {
+        JetObjectDeclaration classObject = declarationProvider.getOwnerInfo().getClassObject();
         return (classObject != null && isClassObjectAllowed()) ? classObject : null;
     }
 

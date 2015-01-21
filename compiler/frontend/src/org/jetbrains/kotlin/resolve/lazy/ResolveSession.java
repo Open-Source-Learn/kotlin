@@ -260,13 +260,6 @@ public class ResolveSession implements KotlinCodeAnalyzer {
     @Override
     @NotNull
     public ClassDescriptor getClassDescriptor(@NotNull JetClassOrObject classOrObject) {
-        if (classOrObject instanceof JetObjectDeclaration) {
-            JetObjectDeclaration objectDeclaration = (JetObjectDeclaration) classOrObject;
-            JetClassObject classObjectElement = objectDeclaration.getClassObjectElement();
-            if (classObjectElement != null) {
-                return getClassObjectDescriptor(classObjectElement);
-            }
-        }
         JetScope resolutionScope = getScopeProvider().getResolutionScopeForDeclaration(classOrObject);
         Name name = classOrObject.getNameAsSafeName();
 
@@ -304,31 +297,6 @@ public class ResolveSession implements KotlinCodeAnalyzer {
         return scriptDescriptors.invoke(script);
     }
 
-    @NotNull
-    /*package*/ LazyClassDescriptor getClassObjectDescriptor(@NotNull JetClassObject classObject) {
-        JetClass aClass = JetStubbedPsiUtil.getContainingDeclaration(classObject, JetClass.class);
-
-        LazyClassDescriptor parentClassDescriptor;
-
-        if (aClass != null) {
-            parentClassDescriptor = (LazyClassDescriptor) getClassDescriptor(aClass);
-        }
-        else {
-            // Class object in object is an error but we want to find descriptors even for this case
-            JetObjectDeclaration objectDeclaration = PsiTreeUtil.getParentOfType(classObject, JetObjectDeclaration.class);
-            assert objectDeclaration != null : String.format("Class object %s can be in class or object in file %s", classObject, classObject.getContainingFile().getText());
-            parentClassDescriptor = (LazyClassDescriptor) getClassDescriptor(objectDeclaration);
-        }
-
-        // Activate resolution and writing to trace
-        parentClassDescriptor.getClassObjectDescriptor();
-        parentClassDescriptor.getDescriptorsForExtraClassObjects();
-        DeclarationDescriptor classObjectDescriptor = getBindingContext().get(BindingContext.DECLARATION_TO_DESCRIPTOR, classObject.getObjectDeclaration());
-        assert classObjectDescriptor != null : "No descriptor found for " + JetPsiUtil.getElementTextWithContext(classObject);
-
-        return (LazyClassDescriptor) classObjectDescriptor;
-    }
-
     @Override
     @NotNull
     public BindingContext getBindingContext() {
@@ -356,17 +324,7 @@ public class ResolveSession implements KotlinCodeAnalyzer {
 
             @Override
             public DeclarationDescriptor visitObjectDeclaration(@NotNull JetObjectDeclaration declaration, Void data) {
-                PsiElement parent = declaration.getParent();
-                if (parent instanceof JetClassObject) {
-                    JetClassObject jetClassObject = (JetClassObject) parent;
-                    return resolveToDescriptor(jetClassObject);
-                }
                 return getClassDescriptor(declaration);
-            }
-
-            @Override
-            public DeclarationDescriptor visitClassObject(@NotNull JetClassObject classObject, Void data) {
-                return getClassObjectDescriptor(classObject);
             }
 
             @Override

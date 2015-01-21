@@ -111,8 +111,8 @@ private class ClassClsStubBuilder(
 
     private fun doCreateClassOrObjectStub(parent: StubElement<out PsiElement>): StubElement<out PsiElement> {
         val isClassObject = classKind == ProtoBuf.Class.Kind.CLASS_OBJECT
-        val fqName = if (!isClassObject) outerContext.memberFqNameProvider.getMemberFqName(classId.getRelativeClassName().shortName()) else null
-        val shortName = fqName?.shortName()?.ref()
+        val fqName = outerContext.memberFqNameProvider.getMemberFqName(classId.getRelativeClassName().shortName())
+        val shortName = fqName.shortName()?.ref()
         val superTypeRefs = supertypeIds.filter {
             //TODO: filtering function types should go away
             !KotlinBuiltIns.isExactFunctionType(it.asSingleFqName()) && !KotlinBuiltIns.isExactExtensionFunctionType(it.asSingleFqName())
@@ -131,7 +131,7 @@ private class ClassClsStubBuilder(
                 KotlinClassStubImpl(
                         JetClassElementType.getStubType(classKind == ProtoBuf.Class.Kind.ENUM_ENTRY),
                         parent,
-                        fqName?.ref(),
+                        fqName.ref(),
                         shortName,
                         superTypeRefs,
                         isTrait = classKind == ProtoBuf.Class.Kind.TRAIT,

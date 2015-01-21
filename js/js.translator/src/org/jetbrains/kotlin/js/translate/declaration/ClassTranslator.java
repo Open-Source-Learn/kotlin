@@ -174,6 +174,7 @@ public final class ClassTranslator extends AbstractTranslator {
     private TranslationContext fixContextForClassObjectAccessing(TranslationContext declarationContext) {
         // In Kotlin we can access to class object members without qualifier just by name, but we should translate it to access with FQ name.
         // So create alias for class object receiver parameter.
+        //TODO:
         ClassDescriptor classObjectDescriptor = descriptor.getClassObjectDescriptor();
         if (classObjectDescriptor != null) {
             JsExpression referenceToClass = translateAsFQReference(classObjectDescriptor.getContainingDeclaration(), declarationContext);

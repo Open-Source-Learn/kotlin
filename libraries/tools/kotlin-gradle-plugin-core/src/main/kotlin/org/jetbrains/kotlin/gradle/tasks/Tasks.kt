@@ -64,7 +64,7 @@ abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractCo
     protected fun isJava(it: File): Boolean = it.extension.equalsIgnoreCase(JavaFileType.INSTANCE.getDefaultExtension())
     protected fun isKotlin(it: File): Boolean = it.extension.equalsIgnoreCase(JetFileType.INSTANCE.getDefaultExtension())
 
-    private fun getKotlinSources(): List<File> = getSource().filter{ isKotlin(it) }
+    abstract fun getKotlinSources(): List<File>
 
     private fun populateCommonArgs(args: T, sources: List<File>) {
         args.freeArgs = sources.map { it.getAbsolutePath() }
@@ -121,12 +121,16 @@ public open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments
         args.noParamAssertions = kotlinOptions.noParamAssertions
     }
 
-    private fun getJavaSourceRoots(): Set<File> = 
+    private fun getJavaSourceRoots(): Set<File> =
             getSource()
             .filter { isJava(it) }
             .map { findSrcDirRoot(it) }
             .filterNotNull()
             .toSet()
+
+    override fun getKotlinSources(): List<File> {
+        return getProject().files(srcDirsSources).getAsFileTree().filter { isKotlin(it) }
+    }
 
     override fun afterCompileHook(args: K2JVMCompilerArguments) {
         getLogger().debug("Copying resulting files to classes")
@@ -142,7 +146,9 @@ public open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments
     override fun setSource(source: Any?) {
         srcDirsSources.clear()
         if (source is SourceDirectorySet) {
-            srcDirsSources.add(source)
+            val newSource: SourceDirectorySet = source
+            newSource.getFilter().include("**/*.kt")
+            srcDirsSources.add(newSource)
         }
         super.setSource(source)
     }
@@ -151,7 +157,9 @@ public open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments
     override fun source(vararg sources: Any?): SourceTask? {
         for (source in sources) {
             if (source is SourceDirectorySet) {
-                srcDirsSources.add(source)
+                val newSource: SourceDirectorySet = source
+                newSource.getFilter().include("**/*.kt")
+                srcDirsSources.add(newSource)
             }
         }
         return super.source(sources)
@@ -160,7 +168,7 @@ public open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments
     fun findSrcDirRoot(file: File): File? {
         for (source in srcDirsSources) {
             for (root in source.getSrcDirs()) {
-                if (FileUtils.directoryContains(root, file)) {
+                if (FileUtil.isAncestor(root, file, false)) {
                     return root
                 }
             }
@@ -176,6 +184,10 @@ public open class Kotlin2JsCompile() : AbstractKotlinCompile<K2JSCompilerArgumen
         val args = K2JSCompilerArguments()
         args.libraryFiles = array<String>()  // defaults to null
         return args
+    }
+
+    override fun getKotlinSources(): List<File> {
+        return getSource().filter { isKotlin(it) }
     }
 
     public fun addLibraryFiles(vararg fs: String) {

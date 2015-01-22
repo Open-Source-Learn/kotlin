@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.cli.common.CLICompiler
 import com.intellij.ide.highlighter.JavaFileType
 import org.jetbrains.kotlin.idea.JetFileType
 import org.jetbrains.kotlin.utils.LibraryUtils
+import com.intellij.openapi.util.io.FileUtil
 
 val DEFAULT_ANNOTATIONS = "org.jebrains.kotlin.gradle.defaultAnnotations"
 

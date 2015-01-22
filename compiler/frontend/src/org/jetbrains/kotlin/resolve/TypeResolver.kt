@@ -28,13 +28,19 @@ import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.diagnostics.Errors.*
 import org.jetbrains.kotlin.resolve.PossiblyBareType.type
 import org.jetbrains.kotlin.types.Variance.*
-import org.jetbrains.kotlin.resolve.TypeResolver.FlexibleTypeCapabilitiesProvider
+import org.jetbrains.kotlin.resolve.FlexibleTypeCapabilitiesProvider
 import kotlin.platform.platformStatic
 import org.jetbrains.kotlin.storage.StorageManager
 import org.jetbrains.kotlin.context.LazinessToken
 import org.jetbrains.kotlin.resolve.lazy.LazyEntity
 import org.jetbrains.kotlin.resolve.lazy.ForceResolveUtil
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
+
+public open class FlexibleTypeCapabilitiesProvider {
+    public open fun getCapabilities(): FlexibleTypeCapabilities {
+        return FlexibleTypeCapabilities.NONE
+    }
+}
 
 public class TypeResolver(
         private val annotationResolver: AnnotationResolver,
@@ -45,12 +51,6 @@ public class TypeResolver(
         private val lazinessToken: LazinessToken,
         private val dynamicTypesSettings: DynamicTypesSettings
 ) {
-
-    public open class FlexibleTypeCapabilitiesProvider {
-        public open fun getCapabilities(): FlexibleTypeCapabilities {
-            return FlexibleTypeCapabilities.NONE
-        }
-    }
 
     public fun resolveType(scope: JetScope, typeReference: JetTypeReference, trace: BindingTrace, checkBounds: Boolean): JetType {
         // bare types are not allowed

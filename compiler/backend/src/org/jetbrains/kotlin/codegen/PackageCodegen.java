@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.diagnostics.DiagnosticUtils;
 import org.jetbrains.kotlin.load.java.JvmAbi;
 import org.jetbrains.kotlin.load.java.JvmAnnotationNames;
 import org.jetbrains.kotlin.load.kotlin.PackagePartClassUtils;
+import org.jetbrains.kotlin.load.kotlin.incremental.IncrementalPackageFragment;
 import org.jetbrains.kotlin.load.kotlin.incremental.IncrementalPackageFragmentProvider;
 import org.jetbrains.kotlin.name.FqName;
 import org.jetbrains.kotlin.psi.*;
@@ -138,8 +139,8 @@ public class PackageCodegen {
 
         // TODO rewrite it to something more robust when module system is implemented
         for (PackageFragmentDescriptor fragment : state.getModule().getPackageFragmentProvider().getPackageFragments(fqName)) {
-            if (fragment instanceof IncrementalPackageFragmentProvider.IncrementalPackageFragment &&
-                ((IncrementalPackageFragmentProvider.IncrementalPackageFragment) fragment).getModuleId().equals(state.getModuleId())) {
+            if (fragment instanceof IncrementalPackageFragment &&
+                ((IncrementalPackageFragment) fragment).getModuleId().equals(state.getModuleId())) {
                 return fragment;
             }
         }

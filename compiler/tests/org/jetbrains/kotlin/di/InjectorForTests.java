@@ -43,7 +43,7 @@ import org.jetbrains.kotlin.types.reflect.ReflectionTypes;
 import org.jetbrains.kotlin.resolve.calls.CallExpressionResolver;
 import org.jetbrains.kotlin.resolve.PartialBodyResolveProvider;
 import org.jetbrains.kotlin.resolve.QualifiedExpressionResolver;
-import org.jetbrains.kotlin.resolve.TypeResolver.FlexibleTypeCapabilitiesProvider;
+import org.jetbrains.kotlin.resolve.FlexibleTypeCapabilitiesProvider;
 import org.jetbrains.kotlin.context.LazinessToken;
 import org.jetbrains.annotations.NotNull;
 import javax.annotation.PreDestroy;

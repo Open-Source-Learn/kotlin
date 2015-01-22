@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.load.java.lazy.descriptors.LazyJavaPackageFragment;
 import org.jetbrains.kotlin.load.kotlin.KotlinJvmBinaryClass;
 import org.jetbrains.kotlin.load.kotlin.VirtualFileKotlinClass;
+import org.jetbrains.kotlin.load.kotlin.incremental.IncrementalPackageFragment;
 import org.jetbrains.kotlin.load.kotlin.incremental.IncrementalPackageFragmentProvider;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.psi.JetFunctionLiteral;
@@ -97,7 +98,7 @@ public class JvmCodegenUtil {
                 return true;
             }
             return callerFragment.getFqName().equals(calleeFragment.getFqName())
-                   && calleeFragment instanceof IncrementalPackageFragmentProvider.IncrementalPackageFragment;
+                   && calleeFragment instanceof IncrementalPackageFragment;
         }
         return false;
     }
@@ -126,7 +127,7 @@ public class JvmCodegenUtil {
             @Nullable File outDirectory
     ) {
         DeclarationDescriptor packageFragment = descriptor.getContainingDeclaration();
-        if (packageFragment instanceof IncrementalPackageFragmentProvider.IncrementalPackageFragment) {
+        if (packageFragment instanceof IncrementalPackageFragment) {
             return true;
         }
 

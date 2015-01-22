@@ -166,6 +166,7 @@ public class KotlinToJVMBytecodeCompiler {
         for (Module module : chunk) {
             sourceRoots.addAll(getAbsolutePaths(directory, module));
 
+            // TODO
             for (String classpathRoot : module.getClasspathRoots()) {
                 configuration.add(JVMConfigurationKeys.CLASSPATH_KEY, new File(classpathRoot));
             }

@@ -69,7 +69,8 @@ import java.util.*;
 
 import static org.jetbrains.kotlin.codegen.AsmUtil.*;
 import static org.jetbrains.kotlin.codegen.JvmCodegenUtil.*;
-import static org.jetbrains.kotlin.codegen.binding.CodegenBinding.*;
+import static org.jetbrains.kotlin.codegen.binding.CodegenBinding.enumEntryNeedSubclass;
+import static org.jetbrains.kotlin.codegen.binding.CodegenBinding.isLocalNamedFun;
 import static org.jetbrains.kotlin.load.java.JvmAnnotationNames.KotlinSyntheticClass;
 import static org.jetbrains.kotlin.resolve.DescriptorToSourceUtils.classDescriptorToDeclaration;
 import static org.jetbrains.kotlin.resolve.DescriptorToSourceUtils.descriptorToDeclaration;
@@ -190,7 +191,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         if (isEnum) {
             for (JetDeclaration declaration : myClass.getDeclarations()) {
                 if (declaration instanceof JetEnumEntry) {
-                    if (enumEntryNeedSubclass(state.getBindingContext(), (JetEnumEntry) declaration)) {
+                    if (enumEntryNeedSubclass(bindingContext, (JetEnumEntry) declaration)) {
                         access &= ~ACC_FINAL;
                     }
                 }
@@ -208,10 +209,6 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         v.visitSource(myClass.getContainingFile().getName(), null);
 
         writeEnclosingMethod();
-
-        writeOuterClasses();
-
-        writeInnerClasses();
 
         AnnotationCodegen.forClass(v.getVisitor(), typeMapper).genAnnotations(descriptor, null);
 
@@ -263,43 +260,6 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         if (isLocalOrAnonymousClass && state.getClassBuilderMode() != ClassBuilderMode.LIGHT_CLASSES) {
             writeOuterClassAndEnclosingMethod(descriptor, descriptor, typeMapper, v);
         }
-    }
-
-    private void writeInnerClasses() {
-        Collection<ClassDescriptor> result = bindingContext.get(INNER_CLASSES, descriptor);
-        if (result != null) {
-            for (ClassDescriptor innerClass : result) {
-                writeInnerClass(innerClass);
-            }
-        }
-    }
-
-    private void writeOuterClasses() {
-        // JVMS7 (4.7.6): a nested class or interface member will have InnerClasses information
-        // for each enclosing class and for each immediate member
-        DeclarationDescriptor inner = descriptor;
-        while (true) {
-            if (inner == null || isTopLevelDeclaration(inner)) {
-                break;
-            }
-            if (inner instanceof ClassDescriptor) {
-                writeInnerClass((ClassDescriptor) inner);
-            }
-            inner = inner.getContainingDeclaration();
-        }
-    }
-
-    private void writeInnerClass(@NotNull ClassDescriptor innerClass) {
-        DeclarationDescriptor containing = innerClass.getContainingDeclaration();
-        String outerClassInternalName =
-                containing instanceof ClassDescriptor ? typeMapper.mapClass((ClassDescriptor) containing).getInternalName() : null;
-
-        String innerName = isClassObject(innerClass)
-                           ? JvmAbi.CLASS_OBJECT_CLASS_NAME
-                           : innerClass.getName().isSpecial() ? null : innerClass.getName().asString();
-
-        String innerClassInternalName = typeMapper.mapClass(innerClass).getInternalName();
-        v.visitInnerClass(innerClassInternalName, outerClassInternalName, innerName, calculateInnerClassAccessFlags(innerClass));
     }
 
     @NotNull
@@ -1166,7 +1126,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         }
 
         if (isClassObjectWithBackingFieldsInOuter(descriptor)) {
-            final ImplementationBodyCodegen parentCodegen = getParentBodyCodegen(this);
+            final ImplementationBodyCodegen parentCodegen = (ImplementationBodyCodegen) getParentCodegen();
             //generate OBJECT$
             parentCodegen.generateClassObjectInitializer(descriptor);
             generateInitializers(new Function0<ExpressionCodegen>() {
@@ -1248,7 +1208,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
                     result.addField((JetDelegatorByExpressionSpecifier) specifier, propertyDescriptor);
                 }
                 else {
-                    JetType expressionType = state.getBindingContext().get(BindingContext.EXPRESSION_TYPE, expression);
+                    JetType expressionType = bindingContext.get(BindingContext.EXPRESSION_TYPE, expression);
                     Type asmType =
                             expressionType != null ? typeMapper.mapType(expressionType) : typeMapper.mapType(getSuperClass(specifier));
                     result.addField((JetDelegatorByExpressionSpecifier) specifier, asmType, "$delegate_" + n);
@@ -1599,7 +1559,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         iv.aconst(enumConstant.getName());
         iv.iconst(ordinal);
 
-        if (delegationSpecifiers.size() == 1 && !enumEntryNeedSubclass(state.getBindingContext(), enumConstant)) {
+        if (delegationSpecifiers.size() == 1 && !enumEntryNeedSubclass(bindingContext, enumConstant)) {
             JetDelegationSpecifier specifier = delegationSpecifiers.get(0);
             if (!(specifier instanceof JetDelegatorToSuperCall)) {
                 throw new UnsupportedOperationException("unsupported type of enum constant initializer: " + specifier);
@@ -1626,7 +1586,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
                 DelegationFieldsInfo.Field field = delegationFieldsInfo.getInfo((JetDelegatorByExpressionSpecifier) specifier);
                 generateDelegateField(field);
                 JetExpression delegateExpression = ((JetDelegatorByExpressionSpecifier) specifier).getDelegateExpression();
-                JetType delegateExpressionType = state.getBindingContext().get(BindingContext.EXPRESSION_TYPE, delegateExpression);
+                JetType delegateExpressionType = bindingContext.get(BindingContext.EXPRESSION_TYPE, delegateExpression);
                 generateDelegates(getSuperClass(specifier), delegateExpressionType, field);
             }
         }

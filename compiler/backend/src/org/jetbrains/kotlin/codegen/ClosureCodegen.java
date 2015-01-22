@@ -76,7 +76,7 @@ public class ClosureCodegen extends MemberCodegen<JetElement> {
             @NotNull ClassContext context,
             @NotNull KotlinSyntheticClass.Kind syntheticClassKind,
             @NotNull FunctionGenerationStrategy strategy,
-            @Nullable MemberCodegen<?> parentCodegen,
+            @NotNull MemberCodegen<?> parentCodegen,
             @NotNull ClassBuilder classBuilder,
             @NotNull Type asmType
     ) {
@@ -146,7 +146,12 @@ public class ClosureCodegen extends MemberCodegen<JetElement> {
                       superInterfaceAsmTypes
         );
         v.visitSource(element.getContainingFile().getName(), null);
+    }
 
+    @Nullable
+    @Override
+    protected ClassDescriptor classForInnerClassRecord() {
+        return JvmCodegenUtil.isLambdaWhichWillBeInlined(bindingContext, funDescriptor) ? null : classDescriptor;
     }
 
     @Override
@@ -204,7 +209,7 @@ public class ClosureCodegen extends MemberCodegen<JetElement> {
 
     @Override
     protected void done() {
-        AsmUtil.writeOuterClassAndEnclosingMethod(classDescriptor, funDescriptor, typeMapper, v);
+        writeOuterClassAndEnclosingMethod(classDescriptor, funDescriptor, typeMapper, v);
         super.done();
     }
 
@@ -297,7 +302,7 @@ public class ClosureCodegen extends MemberCodegen<JetElement> {
 
             int k = 1;
             for (FieldInfo fieldInfo : args) {
-                k = AsmUtil.genAssignInstanceFieldFromParam(fieldInfo, k, iv);
+                k = genAssignInstanceFieldFromParam(fieldInfo, k, iv);
             }
 
             iv.load(0, superClassAsmType);

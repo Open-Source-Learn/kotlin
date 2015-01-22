@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.codegen.inline.InlineCodegenUtil;
 import org.jetbrains.kotlin.codegen.inline.NameGenerator;
 import org.jetbrains.kotlin.codegen.inline.ReifiedTypeParametersUsages;
 import org.jetbrains.kotlin.codegen.state.GenerationState;
+import org.jetbrains.kotlin.codegen.state.JetTypeMapper;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.annotations.Annotations;
 import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl;
@@ -47,30 +48,35 @@ import org.jetbrains.org.objectweb.asm.Type;
 import org.jetbrains.org.objectweb.asm.commons.InstructionAdapter;
 import org.jetbrains.org.objectweb.asm.commons.Method;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
+import static org.jetbrains.kotlin.codegen.AsmUtil.calculateInnerClassAccessFlags;
 import static org.jetbrains.kotlin.codegen.AsmUtil.isPrimitive;
 import static org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.SYNTHESIZED;
 import static org.jetbrains.kotlin.descriptors.SourceElement.NO_SOURCE;
 import static org.jetbrains.kotlin.resolve.BindingContext.VARIABLE;
+import static org.jetbrains.kotlin.resolve.DescriptorUtils.isClassObject;
 import static org.jetbrains.kotlin.resolve.jvm.AsmTypes.*;
 import static org.jetbrains.kotlin.resolve.jvm.diagnostics.DiagnosticsPackage.OtherOrigin;
 import static org.jetbrains.kotlin.resolve.jvm.diagnostics.DiagnosticsPackage.TraitImpl;
 import static org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOrigin.NO_ORIGIN;
 import static org.jetbrains.org.objectweb.asm.Opcodes.*;
 
-public abstract class MemberCodegen<T extends JetElement/* TODO: & JetDeclarationContainer*/> extends ParentCodegenAware {
+public abstract class MemberCodegen<T extends JetElement/* TODO: & JetDeclarationContainer*/> {
+    protected final GenerationState state;
     protected final T element;
     protected final FieldOwnerContext context;
     protected final ClassBuilder v;
     protected final FunctionCodegen functionCodegen;
     protected final PropertyCodegen propertyCodegen;
+    protected final JetTypeMapper typeMapper;
+    protected final BindingContext bindingContext;
+    private final MemberCodegen<?> parentCodegen;
+    private final ReifiedTypeParametersUsages reifiedTypeParametersUsages = new ReifiedTypeParametersUsages();
+    protected final Collection<ClassDescriptor> innerClasses = new LinkedHashSet<ClassDescriptor>();
 
     protected ExpressionCodegen clInit;
     private NameGenerator inlineNameGenerator;
-    private final ReifiedTypeParametersUsages reifiedTypeParametersUsages = new ReifiedTypeParametersUsages();
 
     public MemberCodegen(
             @NotNull GenerationState state,
@@ -79,12 +85,15 @@ public abstract class MemberCodegen<T extends JetElement/* TODO: & JetDeclaratio
             T element,
             @NotNull ClassBuilder builder
     ) {
-        super(state, parentCodegen);
+        this.state = state;
+        this.typeMapper = state.getTypeMapper();
+        this.bindingContext = state.getBindingContext();
         this.element = element;
         this.context = context;
         this.v = builder;
         this.functionCodegen = new FunctionCodegen(context, v, state, this);
         this.propertyCodegen = new PropertyCodegen(context, v, functionCodegen, this);
+        this.parentCodegen = parentCodegen;
     }
 
     protected MemberCodegen(@NotNull MemberCodegen<T> wrapped) {
@@ -112,11 +121,18 @@ public abstract class MemberCodegen<T extends JetElement/* TODO: & JetDeclaratio
 
     protected abstract void generateKotlinAnnotation();
 
+    @Nullable
+    protected ClassDescriptor classForInnerClassRecord() {
+        return null;
+    }
+
     protected void done() {
         if (clInit != null) {
             clInit.v.visitInsn(RETURN);
             FunctionCodegen.endVisit(clInit.v, "static initializer", element);
         }
+
+        writeInnerClasses();
 
         v.done();
     }
@@ -195,6 +211,41 @@ public abstract class MemberCodegen<T extends JetElement/* TODO: & JetDeclaratio
         genClassOrObject(context, aClass, state, this);
     }
 
+    private void writeInnerClasses() {
+        // JVMS7 (4.7.6): a nested class or interface member will have InnerClasses information
+        // for each enclosing class and for each immediate member
+        ClassDescriptor classDescriptor = classForInnerClassRecord();
+        if (classDescriptor != null) {
+            if (parentCodegen != null) {
+                parentCodegen.innerClasses.add(classDescriptor);
+            }
+
+            for (MemberCodegen<?> codegen = this; codegen != null; codegen = codegen.getParentCodegen()) {
+                ClassDescriptor outerClass = codegen.classForInnerClassRecord();
+                if (outerClass != null) {
+                    innerClasses.add(outerClass);
+                }
+            }
+        }
+
+        for (ClassDescriptor innerClass : innerClasses) {
+            writeInnerClass(innerClass);
+        }
+    }
+
+    private void writeInnerClass(@NotNull ClassDescriptor innerClass) {
+        DeclarationDescriptor containing = innerClass.getContainingDeclaration();
+        String outerClassInternalName =
+                containing instanceof ClassDescriptor ? typeMapper.mapClass((ClassDescriptor) containing).getInternalName() : null;
+
+        String innerName = isClassObject(innerClass)
+                           ? JvmAbi.CLASS_OBJECT_CLASS_NAME
+                           : innerClass.getName().isSpecial() ? null : innerClass.getName().asString();
+
+        String innerClassInternalName = typeMapper.mapClass(innerClass).getInternalName();
+        v.visitInnerClass(innerClassInternalName, outerClassInternalName, innerName, calculateInnerClassAccessFlags(innerClass));
+    }
+
     @NotNull
     public NameGenerator getInlineNameGenerator() {
         if (inlineNameGenerator == null) {
@@ -249,8 +300,9 @@ public abstract class MemberCodegen<T extends JetElement/* TODO: & JetDeclaratio
                 bindingContext.get(BindingContext.DELEGATED_PROPERTY_PD_RESOLVED_CALL, propertyDescriptor);
         if (pdResolvedCall != null) {
             int index = PropertyCodegen.indexOfDelegatedProperty(property);
-            StackValue lastValue = PropertyCodegen.invokeDelegatedPropertyConventionMethod(propertyDescriptor, codegen,
-                                                                                           state.getTypeMapper(), pdResolvedCall, index, 0);
+            StackValue lastValue = PropertyCodegen.invokeDelegatedPropertyConventionMethod(
+                    propertyDescriptor, codegen, typeMapper, pdResolvedCall, index, 0
+            );
             lastValue.put(Type.VOID_TYPE, codegen.v);
         }
     }
@@ -389,5 +441,14 @@ public abstract class MemberCodegen<T extends JetElement/* TODO: & JetDeclaratio
     @NotNull
     public ReifiedTypeParametersUsages getReifiedTypeParametersUsages() {
         return reifiedTypeParametersUsages;
+    }
+
+    public MemberCodegen<?> getParentCodegen() {
+        return parentCodegen;
+    }
+
+    @Override
+    public String toString() {
+        return context.toString();
     }
 }

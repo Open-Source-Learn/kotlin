@@ -77,7 +77,7 @@
                 <pathelement location="${idea.sdk}/lib/javac2.jar"/>
                 <pathelement location="${idea.sdk}/lib/asm-all.jar"/>
             </path>
-            <taskdef name="javac2" classname="com.intellij.ant.Javac2" classpathref="javac2.classpath"/>
+            <taskdef name="javac2" classname="com.intellij.ant.Javac2" classpathref="javac2.classpath" loaderref="javac2.loader"/>
             <echo message="Use javac2 from Idea lib"/>
         </then>
         <else>
@@ -368,10 +368,10 @@
 
     <target name="preloader">
         <cleandir dir="${output}/classes/preloader"/>
-        <javac2 destdir="${output}/classes/preloader" debug="true" debuglevel="lines,vars,source" includeAntRuntime="false"
+        <javac destdir="${output}/classes/preloader" debug="true" debuglevel="lines,vars,source" includeAntRuntime="false"
                 source="${java.target}" target="${java.target}">
             <src refid="preloaderSources.path"/>
-        </javac2>
+        </javac>
 
         <jar jarfile="${kotlin-home}/lib/kotlin-preloader.jar">
             <fileset dir="${output}/classes/preloader"/>
